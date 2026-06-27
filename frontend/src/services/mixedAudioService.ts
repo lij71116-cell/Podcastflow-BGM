@@ -75,7 +75,9 @@ export async function createMixedAudio(payload: {
 
 export async function getMixTask(mixedAudioId: string): Promise<MixTaskDTO> {
   try {
-    const res = (await http.get(`/mixed-audios/${mixedAudioId}/task`)) as ApiResponse<MixTaskDTO>
+    const res = (await http.get(`/mixed-audios/${mixedAudioId}/task`, {
+      timeout: 60000,
+    })) as ApiResponse<MixTaskDTO>
     if (res.code !== 200) {
       throw new Error(res.message)
     }

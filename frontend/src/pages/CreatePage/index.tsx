@@ -196,9 +196,11 @@ export default function CreatePage() {
         },
       })
 
+      let pollErrors = 0
       pollRef.current = setInterval(async () => {
         try {
           const task = await getMixTask(result.mixed_audio.id)
+          pollErrors = 0
           setTaskProgress(task.progress)
           setTaskStatus(task.status)
           if (task.status === 'completed') {
@@ -213,12 +215,16 @@ export default function CreatePage() {
             setGenerating(false)
             setTaskError(task.error_message ?? '合成失败')
           }
-        } catch {
-          stopPolling()
-          setGenerating(false)
-          setTaskError('合成状态查询失败')
+        } catch (e) {
+          pollErrors += 1
+          if (pollErrors >= 5) {
+            stopPolling()
+            setGenerating(false)
+            const msg = e instanceof Error ? e.message : '合成状态查询失败'
+            setTaskError(msg)
+          }
         }
-      }, 2000)
+      }, 3000)
     } catch (e) {
       setGenerating(false)
       const msg = e instanceof Error ? e.message : '创建合成任务失败'
@@ -434,6 +440,7 @@ export default function CreatePage() {
                 key={`${podcast.id}-${bgm.id}`}
                 podcastId={podcast.id}
                 bgmId={bgm.id}
+                podcastDurationSec={podcast.duration}
                 podcastVolume={podcastVolume}
                 podcastPlaybackRate={podcastPlaybackRate}
                 bgmVolume={bgmVolume}

@@ -6,6 +6,8 @@ import './MixPreviewPlayer.css'
 interface MixPreviewPlayerProps {
   podcastId: string
   bgmId: string
+  /** 解析得到的播客总时长（秒），用于流式音频 metadata 不完整时的显示 */
+  podcastDurationSec: number
   podcastVolume: number
   podcastPlaybackRate: number
   bgmVolume: number
@@ -39,6 +41,7 @@ function syncBgmTime(bgm: HTMLAudioElement, podcastTime: number) {
 export function MixPreviewPlayer({
   podcastId,
   bgmId,
+  podcastDurationSec,
   podcastVolume,
   podcastPlaybackRate,
   bgmVolume,
@@ -51,7 +54,12 @@ export function MixPreviewPlayer({
   const bgmRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [streamDuration, setStreamDuration] = useState(0)
+
+  const totalDuration = Math.max(
+    podcastDurationSec,
+    Number.isFinite(streamDuration) && streamDuration > 0 ? streamDuration : 0,
+  )
 
   const startBoth = useCallback(async () => {
     const podcast = podcastRef.current
@@ -114,17 +122,19 @@ export function MixPreviewPlayer({
     const bgm = bgmRef.current
     if (!podcast || !bgm) return
 
+    const syncStreamDuration = () => {
+      if (Number.isFinite(podcast.duration) && podcast.duration > 0) {
+        setStreamDuration(Math.floor(podcast.duration))
+      }
+    }
     const onTimeUpdate = () => {
       setProgress(Math.floor(podcast.currentTime))
       if (playing && !bgm.paused) {
         syncBgmTime(bgm, podcast.currentTime)
       }
     }
-    const onLoadedMetadata = () => {
-      if (Number.isFinite(podcast.duration) && podcast.duration > 0) {
-        setDuration(Math.floor(podcast.duration))
-      }
-    }
+    const onLoadedMetadata = syncStreamDuration
+    const onDurationChange = syncStreamDuration
     const onEnded = () => {
       bgm.pause()
       setPlaying(false)
@@ -137,12 +147,14 @@ export function MixPreviewPlayer({
 
     podcast.addEventListener('timeupdate', onTimeUpdate)
     podcast.addEventListener('loadedmetadata', onLoadedMetadata)
+    podcast.addEventListener('durationchange', onDurationChange)
     podcast.addEventListener('ended', onEnded)
     podcast.addEventListener('error', onPodcastError)
 
     return () => {
       podcast.removeEventListener('timeupdate', onTimeUpdate)
       podcast.removeEventListener('loadedmetadata', onLoadedMetadata)
+      podcast.removeEventListener('durationchange', onDurationChange)
       podcast.removeEventListener('ended', onEnded)
       podcast.removeEventListener('error', onPodcastError)
     }
@@ -205,7 +217,7 @@ export function MixPreviewPlayer({
     return null
   }
 
-  const totalDuration = duration > 0 ? duration : 100
+  const sliderMax = totalDuration > 0 ? totalDuration : Math.max(progress, 1)
 
   return (
     <div className="mix-preview-player">
@@ -239,13 +251,13 @@ export function MixPreviewPlayer({
         <Slider
           className="mix-preview-player-progress"
           min={0}
-          max={totalDuration}
-          value={Math.min(progress, totalDuration)}
+          max={sliderMax}
+          value={Math.min(progress, sliderMax)}
           onChange={handleSeek}
           tooltip={{ formatter: (v) => formatTime(v ?? 0) }}
         />
         <span className="mix-preview-player-time">
-          {formatTime(progress)} / {formatTime(totalDuration)}
+          {formatTime(progress)} / {formatTime(sliderMax)}
         </span>
       </div>
     </div>
