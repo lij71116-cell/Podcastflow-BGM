@@ -1,8 +1,10 @@
 import axios from 'axios'
 import type { ApiResponse } from '@/types/api'
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL as string,
+  baseURL: apiBaseUrl,
   timeout: 30000,
   withCredentials: true,
 })
