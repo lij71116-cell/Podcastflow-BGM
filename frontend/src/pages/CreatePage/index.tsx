@@ -34,9 +34,7 @@ function formatDuration(seconds: number): string {
 
 export default function CreatePage() {
   const navigate = useNavigate()
-  const [sourceUrl, setSourceUrl] = useState(
-    'https://www.xiaoyuzhoufm.com/episode/696f522e109824f9e18a114e',
-  )
+  const [sourceUrl, setSourceUrl] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
   const [podcast, setPodcast] = useState<PodcastSourceDTO | null>(null)
