@@ -1,0 +1,11 @@
+# 生产镜像依赖（Docker / Railway），不含 dev 工具
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+httpx>=0.28.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.20
+pydantic>=2.0.0
+loguru>=0.7.0
+pyyaml>=6.0.0
+sqlalchemy[asyncio]>=2.0.0
+aiosqlite>=0.20.0

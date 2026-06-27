@@ -6,16 +6,15 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY pyproject.toml .
 COPY pycore/ pycore/
 COPY backend/ backend/
 
-RUN pip install --no-cache-dir . "python-multipart>=0.0.20"
-
-RUN chmod +x docker-entrypoint.sh
+RUN pip install --no-cache-dir -r backend/requirements-prod.txt
 
 WORKDIR /app/backend
 ENV PYTHONPATH=/app:/app/backend
+
+RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 8080
 
