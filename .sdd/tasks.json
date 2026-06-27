@@ -1,0 +1,644 @@
+{
+  "project": "Podcast Flow",
+  "project_type": "web",
+  "created": "2026-06-25",
+  "source_files": {
+    "prd": "docs/PRD.md",
+    "plan": "docs/Plan.md",
+    "api_contracts": "docs/api-contracts.md"
+  },
+  "external_services": [
+    {
+      "name": "FFmpeg + ffprobe",
+      "required": true,
+      "config_keys": ["FFMPEG_PATH", "FFPROBE_PATH"],
+      "tester_access_required": "系统已安装 ffmpeg/ffprobe 可执行文件",
+      "fallback_allowed": true,
+      "status": "missing"
+    },
+    {
+      "name": "小宇宙公开页面",
+      "required": true,
+      "config_keys": ["XIAOYUZHOU_BASE_URL"],
+      "tester_access_required": "可访问公开 episode URL，无需 API Key",
+      "fallback_allowed": true,
+      "status": "confirmed"
+    },
+    {
+      "name": "本地文件存储",
+      "required": true,
+      "config_keys": ["STORAGE_ROOT"],
+      "tester_access_required": "读写项目 storage/ 目录",
+      "fallback_allowed": false,
+      "status": "confirmed"
+    },
+    {
+      "name": "SQLite",
+      "required": true,
+      "config_keys": ["DATABASE_URL"],
+      "tester_access_required": "读写本地 db 文件",
+      "fallback_allowed": false,
+      "status": "confirmed"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "前端工程初始化 + P01 创建页 Mock",
+      "type": "frontend",
+      "description": "初始化 frontend/（Vite + React 18 + TypeScript + Ant Design 5 + react-router-dom + Zustand + Axios），配置 VITE_USE_MOCK=true、VITE_API_BASE_URL=/api、vite.config.ts server.proxy['/api'] 指向 http://localhost:8099（可通过 VITE_BACKEND_PROXY_TARGET 切换）。实现 P01 创建组合音频页全部 Mock 流程：产品介绍、小宇宙链接输入与格式校验、播客解析展示、BGM 上传/链接切换与校验、混音参数 Slider+Switch、生成任务状态轮询模拟、成功引导三按钮；Mock 数据结构与 api-contracts.md DTO 完全一致；全站不出现下载按钮。",
+      "source_feature": "P01 / F01-F06",
+      "acceptanceCriteria": [
+        "用户打开首页（/），看到产品介绍、小宇宙链接输入框和「解析播客」按钮，布局与 docs/prototypes/index.html 一致",
+        "用户输入 Mock 小宇宙链接并点击解析，页面展示播客封面、标题、播客名、时长和摘要",
+        "用户可在 BGM 区切换「本地上传」与「链接输入」，上传或校验后看到可用/不可用状态提示",
+        "用户可调节播客音量、BGM 音量滑块和 BGM 循环开关，默认值与 PRD 一致（100%/15%/开启）",
+        "用户点击「生成组合音频」后，页面展示等待/合成/成功或失败状态，成功后出现播放、查看详情、前往音频库三个引导按钮",
+        "全站任意位置不出现下载按钮或下载相关文案"
+      ],
+      "technicalChecks": [
+        "npm run type-check 通过",
+        "npm run lint 通过",
+        "npm run build 通过",
+        "Mock 数据格式与 api-contracts.md DTO 完全一致",
+        "vite.config.ts 已配置 server.proxy['/api']，VITE_API_BASE_URL 为相对路径 /api",
+        "VITE_USE_MOCK=true 时不发起真实后端请求",
+        "1440×900 视口无溢出、重叠"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": [],
+      "dependencies": [],
+      "priority": 1,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "降级模式完成：type-check/lint/build 均通过。Agent/Tester 自动验证端口：5199。",
+      "user_gate": true
+    },
+    {
+      "id": "T-002",
+      "title": "P02 我的组合音频库 Mock",
+      "type": "frontend",
+      "description": "实现 P02 音频库页（/library）：顶栏导航、创建入口、资产卡片列表（封面/标题/BGM/时长/状态/时间）、空状态引导、卡片播放/详情/删除交互（Mock 数据驱动）；列表按 created_at 倒序；删除确认后 Mock 列表移除该项。",
+      "source_feature": "P02 / F07 / F11(Mock)",
+      "acceptanceCriteria": [
+        "用户点击顶栏「我的音频库」进入 /library，页面布局与 docs/prototypes/library.html 一致",
+        "有 Mock 资产时，用户看到卡片列表，每张卡片展示封面、标题、BGM 名称、时长、状态和创建时间，最新条目在最前",
+        "无 Mock 资产时，用户看到空状态提示和「创建第一个组合音频」引导",
+        "用户点击卡片「播放」，页面底部出现全局播放器 Mock 条并开始播放",
+        "用户点击「详情」，页面跳转到 /detail/:id",
+        "用户点击「删除」并在确认框确认后，该卡片从当前列表消失"
+      ],
+      "technicalChecks": [
+        "npm run type-check 通过",
+        "npm run lint 通过",
+        "npm run build 通过",
+        "GET /api/mixed-audios Mock 响应格式与 api-contracts.md 一致",
+        "VITE_USE_MOCK=true 时不发起真实后端请求",
+        "页面无下载按钮"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": [],
+      "dependencies": ["T-001"],
+      "priority": 2,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "type-check/lint/build 通过。含 GlobalPlayerBar、列表/删除/播放 Mock。",
+      "user_gate": true
+    },
+    {
+      "id": "T-003",
+      "title": "P03 组合音频详情页 Mock",
+      "type": "frontend",
+      "description": "实现 P03 详情页（/detail/:id）：基础元数据、内嵌 InlinePlayer、BGM 信息、混音参数只读展示、返回音频库导航、删除确认后跳转 P02；Mock 数据来自 GET /api/mixed-audios/{id}。",
+      "source_feature": "P03 / F08 / F11(Mock)",
+      "acceptanceCriteria": [
+        "用户从音频库进入详情页，看到封面、标题、播客名、原链接、时长、创建时间等完整信息",
+        "用户在详情页看到 BGM 名称、来源类型和时长，以及混音参数（音量/循环）只读展示",
+        "用户可在详情页内嵌播放器上播放/暂停、拖动进度和调节音量",
+        "用户点击「返回音频库」，页面跳转到 /library",
+        "用户点击「删除」并确认后，页面跳转回 /library，且该资产不再出现在 Mock 列表中"
+      ],
+      "technicalChecks": [
+        "npm run type-check 通过",
+        "npm run lint 通过",
+        "npm run build 通过",
+        "GET /api/mixed-audios/{id} Mock 响应格式与 api-contracts.md 一致",
+        "VITE_USE_MOCK=true 时不发起真实后端请求",
+        "页面无下载按钮、无参数编辑、无重新生成入口"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": [],
+      "dependencies": ["T-002"],
+      "priority": 3,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "type-check/lint/build 通过。含 InlinePlayer、详情 Mock、删除跳转。",
+      "user_gate": true
+    },
+    {
+      "id": "T-004",
+      "title": "G01 全局底部播放器 Mock",
+      "type": "frontend",
+      "description": "实现 G01 全局底部播放器组件（GlobalPlayerBar + playerStore/Zustand）：从 P01/P02/P03 触发播放，跨路由切换不中断；播放/暂停/进度/时间/音量/关闭控制；展示当前封面与标题；使用 Mock play_url 模拟 stream。",
+      "source_feature": "G01 / F09(Mock) / F10",
+      "acceptanceCriteria": [
+        "用户在 P01、P02 或 P03 点击「播放」后，页面底部固定出现全局播放器条，左侧展示封面和标题",
+        "用户在播放过程中切换到其他页面（如从创建页到音频库），音频继续播放不中断",
+        "用户可在底部播放器上播放/暂停、拖动进度条、查看当前时间，并用 Slider 调节音量",
+        "用户点击关闭按钮后，播放器条消失且音频停止"
+      ],
+      "technicalChecks": [
+        "npm run type-check 通过",
+        "npm run lint 通过",
+        "npm run build 通过",
+        "playerStore 状态在路由切换后保持播放连续性",
+        "VITE_USE_MOCK=true 时不请求真实 stream 接口"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": [],
+      "dependencies": ["T-001", "T-002", "T-003"],
+      "priority": 4,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "type-check/lint/build 通过。playerStore 模块级计时器保证跨路由连续；AppShell 统一挂载 GlobalPlayerBar。",
+      "user_gate": true
+    },
+    {
+      "id": "T-005",
+      "title": "后端脚手架与 pycore 接入",
+      "type": "backend",
+      "description": "初始化 backend/ 目录：基于 pycore 创建 backend/src/main.py（APIServer）、backend/src/core/config.py（ConfigManager 读取 .env）、复制/配置根目录 pyproject.toml（ruff/mypy/pytest 仅覆盖 backend/src 与 backend/tests）；实现 GET /health 基础响应；不得重写 config/server/logger。",
+      "source_feature": "B00",
+      "acceptanceCriteria": [
+        "backend/src/main.py 使用 pycore.api.APIServer，未自行重写 FastAPI 实例",
+        "backend/src/core/config.py 使用 pycore.core.ConfigManager，敏感配置从 backend/.env 读取，无硬编码密钥",
+        "根目录 pyproject.toml 已配置 ruff、mypy、pytest，质量门禁仅覆盖 backend/src 与 backend/tests",
+        "GET /health 返回 200 且响应体含 status 字段",
+        "$PY -m ruff check backend/src backend/tests 与 $PY -m mypy backend/src backend/tests 执行通过"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过",
+        "cd backend && PYTHONPATH=.. $PY -m uvicorn src.main:app --host 127.0.0.1 --port 8099 可短时启动",
+        "pycore/ 未被纳入项目业务代码质量门禁",
+        "不硬编码密钥"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": [],
+      "dependencies": ["T-004"],
+      "priority": 5,
+      "rules_files": ["dev-standards/backend-dev.md", "dev-standards/backend-layers.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "ruff/mypy/pytest 通过。APIServer + ConfigManager + GET /health。Python 3.14.5，.venv 已创建。",
+      "user_gate": false
+    },
+    {
+      "id": "T-006",
+      "title": "数据库模型与初始化脚本",
+      "type": "backend",
+      "description": "从 pycore/integrations/db 模板扩展 backend/src/db/models.py 与 session.py，定义 PodcastSource、BgmSource、MixedAudioAsset、MixTask、Session 等业务表；编写 backend/scripts/init_db.py 初始化 SQLite；创建 storage/ 与 data/ 目录约定。",
+      "source_feature": "B00 / 数据契约",
+      "acceptanceCriteria": [
+        "backend/src/db/models.py 和 backend/src/db/session.py 基于 pycore 模板扩展，包含 PRD 第 6 章全部核心实体",
+        "cd backend && PYTHONPATH=.. $PY scripts/init_db.py 执行成功",
+        "真实 SQLite 文件存在（如 data/podcast_flow.db），目标业务表已创建",
+        "pycore/ 模板未被直接当作业务 DB 会话使用"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含 DB 相关测试）",
+        "cd backend && PYTHONPATH=.. $PY scripts/init_db.py 通过",
+        "SQLite 数据库文件与表结构真实落盘，不只依赖测试夹具",
+        "$PY -m ruff check backend/src backend/tests 通过",
+        "$PY -m mypy backend/src backend/tests 通过"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": ["SQLite"],
+      "dependencies": ["T-005"],
+      "priority": 6,
+      "rules_files": ["dev-standards/backend-dev.md", "dev-standards/backend-layers.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "5 张业务表落盘 podcast_flow.db；init_db 命令：cd backend && PYTHONPATH=..:. python scripts/init_db.py",
+      "user_gate": false
+    },
+    {
+      "id": "T-007",
+      "title": "Session 中间件、存储目录与健康检查完善",
+      "type": "backend",
+      "description": "实现 Session Cookie 中间件（podcast_flow_session，HttpOnly，SameSite=Lax，首次访问自动创建）；注册 CORS（含 withCredentials 支持）；初始化 STORAGE_ROOT 子目录（bgm/mixed）；完善 GET /health 返回 ffmpeg_available 检测结果；统一 API 响应格式 {code,message,data}。",
+      "source_feature": "B01 / F12 / B00",
+      "acceptanceCriteria": [
+        "首次无 Cookie 访问 /api/* 时，响应 Set-Cookie podcast_flow_session，后续请求携带该 Cookie",
+        "GET /health 返回 200，data 含 status 与 ffmpeg_available（当前系统未安装 FFmpeg 时为 false）",
+        "CORS 中间件已注册，允许前端开发源 withCredentials",
+        "STORAGE_ROOT 下 bgm/ 与 mixed/ 目录可按配置自动创建",
+        "所有 /api/* 路由（除 /health）经 Session 中间件注入 session_id"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含 session 中间件测试）",
+        "cd backend && PYTHONPATH=.. $PY -m uvicorn src.main:app --host 127.0.0.1 --port 8099 可短时启动",
+        "GET /health 真实请求返回 ffmpeg_available 字段",
+        "cd backend && PYTHONPATH=.. $PY scripts/init_db.py 通过（如需要）",
+        "必要服务 Key / 配置字段已按 backend/.env 提供，未硬编码进代码"
+      ],
+      "frontendIntegration": {
+        "required": false,
+        "pages": [],
+        "services": [],
+        "realApiEndpoints": [],
+        "mockExitCriteria": []
+      },
+      "externalServices": ["FFmpeg + ffprobe", "本地文件存储"],
+      "dependencies": ["T-006"],
+      "priority": 7,
+      "rules_files": ["dev-standards/backend-dev.md", "dev-standards/backend-layers.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "Session 中间件 + GET /health(ffmpeg_available) + storage 自动创建。pytest 14 passed。",
+      "user_gate": false
+    },
+    {
+      "id": "T-008",
+      "title": "小宇宙链接解析功能闭环",
+      "type": "integration",
+      "description": "实现 POST /api/podcasts/parse（XiaoyuzhouParserService，httpx trust_env=False）；保存 PodcastSource（audio_source_url 仅存后端）；前端 CreatePage 将 podcastService Mock 切换为真实 API（VITE_USE_MOCK=false）；仅接受 xiaoyuzhoufm.com/episode/{id} 格式。",
+      "source_feature": "F01 / B02",
+      "acceptanceCriteria": [
+        "用户在创建页输入有效小宇宙公开单集链接并点击「解析播客」，页面展示真实解析得到的封面、标题、播客名、时长和摘要",
+        "用户输入非法链接格式时，页面即时提示「链接格式无效」类错误信息",
+        "用户输入无法解析的链接时，页面提示「播客解析失败，请检查链接是否为公开单集」",
+        "解析成功后，页面不出现原始播客音频直链或下载入口"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含解析接口测试）",
+        "VITE_USE_MOCK=false 时 CreatePage 请求命中真实 POST /api/podcasts/parse，不走 frontend/src/mocks/*",
+        "httpx 客户端 trust_env=False",
+        "页面无 [Mock] 残留文案",
+        "必要服务配置已按 backend/.env 提供；小宇宙不可用时测试报告标记 Mock/fallback 验收",
+        "外部服务调用失败时有清晰错误处理和日志，不静默吞错"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["CreatePage"],
+        "services": ["podcastService", "services/api.ts"],
+        "realApiEndpoints": ["POST /api/podcasts/parse"],
+        "mockExitCriteria": [
+          "VITE_USE_MOCK=false 时 podcastService.parse() 调用真实 /api/podcasts/parse",
+          "CreatePage 解析区不再使用 Mock 播客数据"
+        ]
+      },
+      "externalServices": ["小宇宙公开页面"],
+      "dependencies": ["T-007"],
+      "priority": 8,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "POST /api/podcasts/parse 真实解析 JSON-LD；前端 VITE_USE_MOCK=false。pytest 18 passed。",
+      "user_gate": true
+    },
+    {
+      "id": "T-009",
+      "title": "BGM 上传与链接校验功能闭环",
+      "type": "integration",
+      "description": "实现 POST /api/bgm/upload（multipart，格式/大小校验，ffprobe 探测）与 POST /api/bgm/validate-url（HEAD/GET 预检并下载至 storage）；前端 BgmInputPanel 切换真实 API；支持 mp3/m4a/wav，≤50MB。",
+      "source_feature": "F02 / F03 / B03 / B04",
+      "acceptanceCriteria": [
+        "用户在创建页「本地上传」Tab 选择 mp3/m4a/wav 文件并上传，页面显示 BGM 可用状态及名称、时长信息",
+        "用户上传不支持格式或超过 50MB 文件时，页面显示对应错误提示（格式不支持/文件过大）",
+        "用户在「链接输入」Tab 输入可访问的公开 BGM 链接并校验，页面显示可用状态及 BGM 信息",
+        "用户输入不可用 BGM 链接时，页面提示「BGM 链接不可用，请重新上传或更换链接」"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含 BGM 上传与链接校验测试）",
+        "VITE_USE_MOCK=false 时 bgmService 请求命中真实 POST /api/bgm/upload 与 POST /api/bgm/validate-url",
+        "上传文件真实落盘至 STORAGE_ROOT/bgm/",
+        "ffprobe 不可用时相关接口返回明确错误，测试报告标记 fallback 验收",
+        "页面无 [Mock] 残留文案",
+        "必要服务配置已按 backend/.env 提供，未硬编码密钥"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["CreatePage"],
+        "services": ["bgmService", "services/api.ts"],
+        "realApiEndpoints": [
+          "POST /api/bgm/upload",
+          "POST /api/bgm/validate-url"
+        ],
+        "mockExitCriteria": [
+          "VITE_USE_MOCK=false 时 BGM 上传与链接校验均走真实后端",
+          "CreatePage BGM 区不再使用 Mock BGM 数据"
+        ]
+      },
+      "externalServices": ["FFmpeg + ffprobe", "本地文件存储"],
+      "dependencies": ["T-008"],
+      "priority": 9,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": null,
+      "tester_id": null,
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "POST /api/bgm/upload + validate-url；bgmService 真实 API；pytest 26 passed（ffprobe mock）。当前系统未安装 FFmpeg 时真实上传/链接校验返回 50301 fallback，安装后需用户验收。",
+      "user_gate": true
+    },
+    {
+      "id": "T-010",
+      "title": "混音合成任务功能闭环",
+      "type": "integration",
+      "description": "实现 POST /api/mixed-audios（创建资产+MixTask）、后台 Mix Worker（FFmpeg volume/loop/amix 异步合成）、GET /api/mixed-audios/{id}/task（轮询）；前端 MixControlPanel+TaskStatusPanel 切真实 API，每 2s 轮询任务状态；合成输出至 storage/mixed/{id}.mp3。",
+      "source_feature": "F04 / F05 / F06 / B05 / B06 / B07",
+      "acceptanceCriteria": [
+        "用户在创建页完成播客解析和 BGM 校验后，可调节混音参数并点击「生成组合音频」，页面进入任务等待/合成状态并展示进度",
+        "合成成功时，页面展示成功状态及播放、查看详情、前往音频库三个引导按钮",
+        "合成失败时，页面展示失败原因提示，且用户可点击重试再次触发生成",
+        "任务进行中用户可留在当前页看到状态从等待到合成中的变化（轮询刷新）"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含合成任务创建、worker、轮询测试）",
+        "VITE_USE_MOCK=false 时 mixedAudioService 命中真实 POST /api/mixed-audios 与 GET /api/mixed-audios/{id}/task",
+        "FFmpeg 可用时完成真实 mp3 合成并落盘 storage/mixed/；不可用时接口返回明确错误（如 500/40006），测试报告标记 fallback 验收，不得宣称真实合成通过",
+        "合成超时（30min）与 ffmpeg 非零 exit 时 status=failed 且 error_message 有值",
+        "页面无 [Mock] 残留文案",
+        "必要服务 Key / 配置字段已按 backend/.env 提供；FFmpeg 缺失时测试报告必须标记 Mock/fallback 验收"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["CreatePage"],
+        "services": ["mixedAudioService", "services/api.ts"],
+        "realApiEndpoints": [
+          "POST /api/mixed-audios",
+          "GET /api/mixed-audios/{id}/task"
+        ],
+        "mockExitCriteria": [
+          "VITE_USE_MOCK=false 时生成与轮询均走真实后端",
+          "CreatePage 任务状态区不再使用 Mock 进度数据"
+        ]
+      },
+      "externalServices": ["FFmpeg + ffprobe", "本地文件存储", "SQLite"],
+      "dependencies": ["T-009"],
+      "priority": 10,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": null,
+      "tester_id": null,
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "POST /api/mixed-audios + Mix Worker + GET task；前端 2s 轮询；pytest 33 passed。FFmpeg 8.1.2 已安装，可真实合成。",
+      "user_gate": true
+    },
+    {
+      "id": "T-011",
+      "title": "组合音频列表与详情功能闭环",
+      "type": "integration",
+      "description": "实现 GET /api/mixed-audios（当前 session 倒序列表）与 GET /api/mixed-audios/{id}（详情，含嵌套 podcast/bgm/mix_config）；前端 LibraryPage 与 DetailPage 切真实 API；session 隔离，不返回 output_file_path。",
+      "source_feature": "F07 / F08 / B08 / B09",
+      "acceptanceCriteria": [
+        "用户在音频库页看到当前浏览器 Session 下所有已生成的组合音频卡片，最新创建的排在最前",
+        "用户音频库无资产时，看到空状态引导",
+        "用户点击卡片「详情」进入详情页，看到完整播客信息、BGM 信息、混音参数和资产状态",
+        "用户无法通过直接输入 URL 访问不属于当前 Session 的资产详情（页面提示无权或不存在）"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含列表、详情、session 隔离测试）",
+        "VITE_USE_MOCK=false 时 LibraryPage 与 DetailPage 请求命中真实 GET /api/mixed-audios 与 GET /api/mixed-audios/{id}",
+        "响应 DTO 不含 output_file_path、audio_source_url、file_path",
+        "download_enabled 固定 false，页面无下载 UI",
+        "页面无 [Mock] 残留文案"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["LibraryPage", "DetailPage"],
+        "services": ["mixedAudioService", "services/api.ts"],
+        "realApiEndpoints": [
+          "GET /api/mixed-audios",
+          "GET /api/mixed-audios/{id}"
+        ],
+        "mockExitCriteria": [
+          "VITE_USE_MOCK=false 时列表与详情均走真实后端",
+          "P02/P03 不再使用 Mock 资产列表数据"
+        ]
+      },
+      "externalServices": ["SQLite"],
+      "dependencies": ["T-010"],
+      "priority": 11,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "列表/详情真实 API + Session 隔离；用户门禁通过（随 T-012 一并验收）。",
+      "user_gate": true
+    },
+    {
+      "id": "T-012",
+      "title": "Stream 播放与全局播放器功能闭环",
+      "type": "integration",
+      "description": "实现 GET /api/mixed-audios/{id}/stream（session 校验、status=completed、Content-Type audio/mpeg、Content-Disposition inline、HTTP Range）；前端 GlobalPlayerBar/InlinePlayer/playerStore 使用真实 play_url；跨页连续播放。",
+      "source_feature": "F09 / F10 / B10",
+      "acceptanceCriteria": [
+        "用户在音频库或详情页点击「播放」，底部全局播放器出现并开始播放组合音频",
+        "用户在播放过程中切换页面，音频继续播放不中断",
+        "用户可在全局播放器上暂停、拖动进度、调节音量并关闭播放器",
+        "用户在详情页内嵌播放器上可独立控制播放/暂停和进度",
+        "全站任意位置无下载按钮；播放仅通过 stream 内联播放"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含 stream、Range、session 校验测试）",
+        "VITE_USE_MOCK=false 时播放器请求命中真实 GET /api/mixed-audios/{id}/stream",
+        "响应头 Content-Disposition 为 inline，禁止 attachment",
+        "未完成合成（status≠completed）时 stream 返回 403 且前端有明确提示",
+        "未完成合成的资产无法播放时，测试可用已有 completed 资产或标记 fallback",
+        "页面无 [Mock] 残留文案"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["CreatePage", "LibraryPage", "DetailPage"],
+        "services": ["mixedAudioService", "services/api.ts"],
+        "realApiEndpoints": ["GET /api/mixed-audios/{id}/stream"],
+        "mockExitCriteria": [
+          "VITE_USE_MOCK=false 时 GlobalPlayerBar 与 InlinePlayer 使用真实 stream URL",
+          "playerStore 播放源不再指向 Mock 音频"
+        ]
+      },
+      "externalServices": ["本地文件存储"],
+      "dependencies": ["T-011"],
+      "priority": 12,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "stream + Range + 跨页 GlobalPlayerBar；pytest 57 passed；用户门禁通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-013",
+      "title": "删除资产功能闭环",
+      "type": "integration",
+      "description": "实现 DELETE /api/mixed-audios/{id}（删除 DB 记录 + storage/mixed 文件）；前端 P02/P03 删除确认后切真实 API；删除后 stream 不可播放、列表不再展示。",
+      "source_feature": "F11 / B11",
+      "acceptanceCriteria": [
+        "用户在音频库点击某资产「删除」并确认后，该卡片从列表消失",
+        "用户在详情页点击「删除」并确认后，页面跳转回音频库且该资产不再出现",
+        "用户删除正在播放的资产后，全局播放器停止且播放器条消失",
+        "用户删除后无法再通过播放按钮播放该资产"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含删除接口、文件清理、session 隔离测试）",
+        "VITE_USE_MOCK=false 时删除请求命中真实 DELETE /api/mixed-audios/{id}",
+        "删除后 storage/mixed/ 对应文件已移除",
+        "删除后 GET /api/mixed-audios/{id} 返回 404",
+        "页面无 [Mock] 残留文案"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["LibraryPage", "DetailPage"],
+        "services": ["mixedAudioService", "services/api.ts"],
+        "realApiEndpoints": ["DELETE /api/mixed-audios/{id}"],
+        "mockExitCriteria": [
+          "VITE_USE_MOCK=false 时删除操作走真实后端",
+          "P02/P03 删除不再仅修改 Mock 本地状态"
+        ]
+      },
+      "externalServices": ["本地文件存储", "SQLite"],
+      "dependencies": ["T-012"],
+      "priority": 13,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "DELETE API + 文件清理 + session 隔离；删除正在播放资产时 closeIfCurrent；pytest 60 passed；用户门禁通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-014",
+      "title": "E2E 全链路回归验证",
+      "type": "integration",
+      "description": "全系统 E2E 回归：输入小宇宙链接 → 解析 → 添加 BGM → 配置混音 → 生成 → 音频库列表 → 详情 → 全局播放 → 删除；验证 Session 隔离、无下载、无登录、VITE_USE_MOCK=false；输出启动与验收文档要点。",
+      "source_feature": "MVP 全链路",
+      "acceptanceCriteria": [
+        "用户从创建页输入小宇宙链接并完成解析、BGM 添加、混音配置与生成后，可在音频库看到新资产",
+        "用户可在音频库播放并在详情页查看完整信息，切换页面时播放不中断",
+        "用户删除资产后，该资产从列表消失且无法再播放",
+        "全站任意页面均无下载按钮、无登录入口；无重新生成（失败重试除外）、无淡入淡出配置；音频库支持标题搜索与日期筛选（用户增强）"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false 全链路请求均命中真实后端 /api/*",
+        "vite.config.ts server.proxy['/api'] 指向后端 8099（Agent/Tester）或 8003（用户门禁）",
+        "Session Cookie 全流程携带，跨接口资产归属一致",
+        "FFmpeg 可用时合成→播放→删除全链路通过；不可用时测试报告明确标注 fallback 范围",
+        "npm run type-check、lint、build 通过",
+        "$PY -m pytest backend/tests 通过",
+        "$PY -m ruff check backend/src backend/tests 与 mypy 通过"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["CreatePage", "LibraryPage", "DetailPage"],
+        "services": [
+          "podcastService",
+          "bgmService",
+          "mixedAudioService",
+          "services/api.ts"
+        ],
+        "realApiEndpoints": [
+          "POST /api/podcasts/parse",
+          "POST /api/bgm/upload",
+          "POST /api/bgm/validate-url",
+          "POST /api/mixed-audios",
+          "GET /api/mixed-audios/{id}/task",
+          "GET /api/mixed-audios",
+          "GET /api/mixed-audios/{id}",
+          "GET /api/mixed-audios/{id}/stream",
+          "DELETE /api/mixed-audios/{id}"
+        ],
+        "mockExitCriteria": [
+          "全站 VITE_USE_MOCK=false，无任何功能仍走 Mock 分支"
+        ]
+      },
+      "externalServices": [
+        "FFmpeg + ffprobe",
+        "小宇宙公开页面",
+        "本地文件存储",
+        "SQLite"
+      ],
+      "dependencies": ["T-013"],
+      "priority": 14,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "全链路 E2E 用户门禁通过；试听区改为自定义播放器（无原生三点菜单/下载）；docs/startup.md 已交付。",
+      "user_gate": true
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440">
+  <title>Podcast Flow — 我的组合音频</title>
+  <link rel="stylesheet" href="assets/common.css">
+</head>
+<body>
+  <div class="prototype-banner">原型演示 · P02 我的组合音频库</div>
+
+  <header class="app-header">
+    <a href="index.html" class="logo">Podcast Flow</a>
+    <nav class="nav-tabs">
+      <a href="index.html" class="nav-tab" data-page="create">创建</a>
+      <a href="library.html" class="nav-tab active" data-page="library">我的音频库</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <div class="page-header">
+      <h1 class="page-title">我的组合音频</h1>
+      <a href="index.html" class="btn btn-primary">创建新组合音频</a>
+    </div>
+
+    <div class="asset-grid" id="assetGrid"></div>
+
+    <div class="empty-state hidden" id="emptyState">
+      <div class="empty-icon">暂无</div>
+      <p>还没有组合音频</p>
+      <a href="index.html" class="btn btn-primary">创建第一个组合音频</a>
+    </div>
+  </main>
+
+  <div class="global-player" id="globalPlayer">
+    <div class="player-info">
+      <div class="cover cover-xs">自</div>
+      <div class="player-info-text">
+        <h4 class="player-title">—</h4>
+        <p class="player-podcast">—</p>
+      </div>
+    </div>
+    <div class="player-center">
+      <button class="play-btn">▶</button>
+      <div class="player-progress">
+        <input type="range" class="player-progress-input" min="0" max="100" value="1">
+      </div>
+      <span class="player-time"><span class="time-current">00:00</span> / <span class="time-total">53:00</span></span>
+    </div>
+    <div class="player-right">
+      <input type="range" min="0" max="100" value="80">
+      <button class="close-player">×</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h3>确认删除</h3>
+      <p class="modal-message">确定要删除这条组合音频吗？删除后不可恢复。</p>
+      <div class="btn-group">
+        <button class="btn modal-cancel">取消</button>
+        <button class="btn btn-danger modal-confirm">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/common.js"></script>
+  <script>
+    initHeader('library');
+
+    const grid = document.getElementById('assetGrid');
+    const emptyState = document.getElementById('emptyState');
+    let assets = JSON.parse(sessionStorage.getItem('pf_assets') || 'null') || MOCK_ASSETS;
+
+    function renderAssets() {
+      if (!assets.length) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+      grid.innerHTML = assets.map((a) => `
+        <div class="asset-card" data-id="${a.id}">
+          <div class="asset-card-top">
+            <div class="cover cover-sm" style="background:${a.cover_color}">${a.cover_initial}</div>
+            <div>
+              <h3>${a.title}</h3>
+              <p class="meta">播客：${a.podcast_name}</p>
+              <p class="meta">BGM：${a.bgm_name}</p>
+              <p class="meta">时长：${a.duration_label} · ${a.created_at}</p>
+              <span class="tag tag-success">${a.status === 'completed' ? '已完成' : a.status}</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary btn-play" data-id="${a.id}">播放</button>
+            <a href="detail.html?id=${a.id}" class="btn">详情</a>
+            <button class="btn btn-danger btn-delete" data-id="${a.id}">删除</button>
+          </div>
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.btn-play').forEach((btn) => {
+        btn.addEventListener('click', () => showGlobalPlayer(getAssetById(btn.dataset.id)));
+      });
+
+      grid.querySelectorAll('.btn-delete').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          showModal('确定要删除这条组合音频吗？删除后不可恢复。', () => {
+            assets = assets.filter((a) => a.id !== id);
+            sessionStorage.setItem('pf_assets', JSON.stringify(assets));
+            renderAssets();
+          });
+        });
+      });
+    }
+
+    renderAssets();
+  </script>
+</body>
+</html>

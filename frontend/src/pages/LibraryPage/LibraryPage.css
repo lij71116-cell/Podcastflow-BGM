@@ -1,0 +1,53 @@
+.library-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: 8px;
+}
+
+.library-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+.library-date-range {
+  min-width: 260px;
+}
+
+.library-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0ec;
+}
+
+.library-stats {
+  font-size: 13px;
+  margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .library-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .library-stats {
+    margin-right: 0;
+    text-align: center;
+  }
+
+  .library-footer .ant-pagination {
+    justify-content: center;
+  }
+}

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440">
+  <title>Podcast Flow — 创建组合音频</title>
+  <link rel="stylesheet" href="assets/common.css">
+</head>
+<body>
+  <!-- 原型说明：本 HTML 仅用于设计验证，非生产前端源码 -->
+  <div class="prototype-banner">原型演示 · 1440×900 桌面 Web · 可走通：解析 → BGM → 生成 → 播放</div>
+
+  <header class="app-header">
+    <a href="index.html" class="logo">Podcast Flow</a>
+    <nav class="nav-tabs">
+      <a href="index.html" class="nav-tab active" data-page="create">创建</a>
+      <a href="library.html" class="nav-tab" data-page="library">我的音频库</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <section class="hero">
+      <h1>为小宇宙播客添加专注 BGM</h1>
+      <p>输入小宇宙链接，添加 BGM，生成可保存、可复听的组合播客</p>
+      <span class="scope">当前仅支持小宇宙公开单集链接</span>
+    </section>
+
+    <!-- Step 1 -->
+    <section class="step-card" id="step1">
+      <div class="step-header">
+        <span class="step-badge" id="badge1">1</span>
+        <span class="step-title">输入小宇宙播客链接</span>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <input type="url" id="episodeUrl" placeholder="https://www.xiaoyuzhoufm.com/episode/..." value="https://www.xiaoyuzhoufm.com/episode/696f522e109824f9e18a114e">
+          <button class="btn btn-primary" id="parseBtn">解析播客</button>
+        </div>
+        <p class="hint">支持格式：xiaoyuzhoufm.com/episode/{单集ID}</p>
+      </div>
+      <div id="parseError" class="alert alert-error hidden" style="display:none"></div>
+      <div id="parseLoading" style="display:none">
+        <div class="skeleton" style="width:60%"></div>
+        <div class="skeleton" style="width:40%"></div>
+      </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="step-card hidden" id="step2">
+      <div class="step-header">
+        <span class="step-badge done" id="badge2">2</span>
+        <span class="step-title">播客信息</span>
+        <span class="tag tag-success">解析成功</span>
+      </div>
+      <div class="podcast-info">
+        <div class="cover" id="podcastCover">自</div>
+        <div class="podcast-meta">
+          <h3 id="podcastTitle">—</h3>
+          <p>播客：<span id="podcastName">—</span></p>
+          <p>时长：<span id="podcastDuration">—</span></p>
+          <p id="podcastDesc" style="margin-top:6px;color:#8C8C8C;font-size:12px">—</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="step-card" id="step3">
+      <div class="step-header">
+        <span class="step-badge" id="badge3">3</span>
+        <span class="step-title">添加 BGM</span>
+      </div>
+      <div class="radio-tabs">
+        <label class="radio-tab active" id="tabUpload">
+          <input type="radio" name="bgmSource" value="upload" checked> 上传本地 BGM
+        </label>
+        <label class="radio-tab" id="tabUrl">
+          <input type="radio" name="bgmSource" value="url"> 输入 BGM 音频链接
+        </label>
+      </div>
+      <div id="bgmUploadPanel">
+        <div class="upload-area" id="uploadArea">
+          <p>点击选择文件或拖拽到此处</p>
+          <p class="hint">支持 mp3 / m4a / wav，最大 50MB</p>
+        </div>
+        <input type="file" id="bgmFile" accept=".mp3,.m4a,.wav" style="display:none">
+      </div>
+      <div id="bgmUrlPanel" style="display:none">
+        <div class="input-group">
+          <input type="url" id="bgmUrl" placeholder="https://example.com/focus-bgm.mp3">
+          <button class="btn" id="validateBgmBtn">校验链接</button>
+        </div>
+      </div>
+      <div id="bgmStatus" style="margin-top:12px;display:none">
+        <span class="tag tag-success" id="bgmTag">BGM 可用 · Focus Rain · 03:00</span>
+      </div>
+    </section>
+
+    <!-- Step 4 -->
+    <section class="step-card" id="step4">
+      <div class="step-header">
+        <span class="step-badge" id="badge4">4</span>
+        <span class="step-title">混音参数</span>
+      </div>
+      <div class="slider-row">
+        <label>播客音量</label>
+        <input type="range" id="podcastVol" min="0" max="100" value="100">
+        <span class="slider-value" id="podcastVolVal">100%</span>
+      </div>
+      <div class="slider-row">
+        <label>BGM 音量</label>
+        <input type="range" id="bgmVol" min="0" max="100" value="15">
+        <span class="slider-value" id="bgmVolVal">15%</span>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="bgmLoop" checked>
+        <label for="bgmLoop">BGM 自动循环铺满播客</label>
+      </div>
+    </section>
+
+    <!-- Step 5 -->
+    <section class="step-card" id="step5">
+      <div class="step-header">
+        <span class="step-badge" id="badge5">5</span>
+        <span class="step-title">生成组合音频</span>
+      </div>
+      <button class="btn btn-primary" id="generateBtn" disabled>生成组合音频</button>
+      <div id="taskPanel" style="display:none;margin-top:16px">
+        <span class="tag tag-warning" id="taskTag">合成中</span>
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p class="hint" id="taskHint">正在使用 FFmpeg 合成完整组合音频…</p>
+      </div>
+      <div id="taskError" class="alert alert-error" style="display:none">
+        合成失败：音频源读取超时。请稍后重试。
+        <button class="btn" style="margin-top:8px" id="retryBtn">重新生成</button>
+      </div>
+    </section>
+
+    <!-- Step 6 Success -->
+    <section class="step-card hidden" id="step6">
+      <div class="step-header">
+        <span class="step-badge done">6</span>
+        <span class="step-title">生成成功</span>
+        <span class="tag tag-success">已完成</span>
+      </div>
+      <p style="margin-bottom:16px">已保存到「我的组合音频库」</p>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="playSuccessBtn">播放</button>
+        <button class="btn" id="detailSuccessBtn">查看详情</button>
+        <button class="btn" id="librarySuccessBtn">进入音频库</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- G01 Global Player -->
+  <div class="global-player" id="globalPlayer">
+    <div class="player-info">
+      <div class="cover cover-xs" style="background:#2D6A4F">自</div>
+      <div class="player-info-text">
+        <h4 class="player-title">—</h4>
+        <p class="player-podcast">—</p>
+      </div>
+    </div>
+    <div class="player-center">
+      <button class="play-btn">▶</button>
+      <div class="player-progress">
+        <input type="range" class="player-progress-input" min="0" max="100" value="1">
+      </div>
+      <span class="player-time"><span class="time-current">00:35</span> / <span class="time-total">53:00</span></span>
+    </div>
+    <div class="player-right">
+      <input type="range" min="0" max="100" value="80" title="音量">
+      <button class="close-player" title="关闭">×</button>
+    </div>
+  </div>
+
+  <script src="assets/common.js"></script>
+  <script>
+    initHeader('create');
+
+    const state = {
+      parsed: false,
+      bgmReady: false,
+      generated: false,
+      accentColor: '#2D6A4F',
+    };
+
+    const episodeUrl = document.getElementById('episodeUrl');
+    const parseBtn = document.getElementById('parseBtn');
+    const parseError = document.getElementById('parseError');
+    const parseLoading = document.getElementById('parseLoading');
+    const step2 = document.getElementById('step2');
+    const generateBtn = document.getElementById('generateBtn');
+    const taskPanel = document.getElementById('taskPanel');
+    const progressFill = document.getElementById('progressFill');
+    const step6 = document.getElementById('step6');
+    const taskError = document.getElementById('taskError');
+
+    function validateXiaoyuzhouUrl(url) {
+      return /xiaoyuzhoufm\.com\/episode\/[a-zA-Z0-9]+/.test(url);
+    }
+
+    function updateGenerateBtn() {
+      generateBtn.disabled = !(state.parsed && state.bgmReady);
+    }
+
+    parseBtn.addEventListener('click', () => {
+      const url = episodeUrl.value.trim();
+      parseError.style.display = 'none';
+      if (!url) return;
+      if (!validateXiaoyuzhouUrl(url)) {
+        parseError.textContent = '链接格式无效，请输入小宇宙公开单集链接（xiaoyuzhoufm.com/episode/{id}）';
+        parseError.style.display = 'block';
+        return;
+      }
+      parseBtn.classList.add('loading');
+      parseBtn.textContent = '解析中…';
+      parseLoading.style.display = 'block';
+      setTimeout(() => {
+        parseBtn.classList.remove('loading');
+        parseBtn.textContent = '解析播客';
+        parseLoading.style.display = 'none';
+        state.parsed = true;
+        state.accentColor = MOCK_PODCAST.cover_color;
+        setAccentColor(state.accentColor);
+        step2.classList.remove('hidden');
+        step2.classList.add('accent-border');
+        document.getElementById('badge1').classList.add('done');
+        document.getElementById('badge2').style.background = state.accentColor;
+        document.getElementById('podcastCover').style.background = state.accentColor;
+        document.getElementById('podcastCover').textContent = MOCK_PODCAST.cover_initial;
+        document.getElementById('podcastTitle').textContent = MOCK_PODCAST.title;
+        document.getElementById('podcastName').textContent = MOCK_PODCAST.podcast_name;
+        document.getElementById('podcastDuration').textContent = MOCK_PODCAST.duration_label;
+        document.getElementById('podcastDesc').textContent = MOCK_PODCAST.description;
+        updateGenerateBtn();
+      }, 1200);
+    });
+
+    // BGM tabs
+    document.querySelectorAll('input[name="bgmSource"]').forEach((radio) => {
+      radio.addEventListener('change', (e) => {
+        document.getElementById('tabUpload').classList.toggle('active', e.target.value === 'upload');
+        document.getElementById('tabUrl').classList.toggle('active', e.target.value === 'url');
+        document.getElementById('bgmUploadPanel').style.display = e.target.value === 'upload' ? 'block' : 'none';
+        document.getElementById('bgmUrlPanel').style.display = e.target.value === 'url' ? 'block' : 'none';
+      });
+    });
+
+    const uploadArea = document.getElementById('uploadArea');
+    const bgmFile = document.getElementById('bgmFile');
+    uploadArea.addEventListener('click', () => bgmFile.click());
+    bgmFile.addEventListener('change', () => {
+      if (bgmFile.files.length) {
+        state.bgmReady = true;
+        document.getElementById('bgmStatus').style.display = 'block';
+        document.getElementById('bgmTag').textContent = `BGM 可用 · ${MOCK_BGM.title} · ${MOCK_BGM.duration_label}`;
+        document.getElementById('badge3').classList.add('done');
+        updateGenerateBtn();
+      }
+    });
+
+    document.getElementById('validateBgmBtn').addEventListener('click', () => {
+      const url = document.getElementById('bgmUrl').value.trim();
+      if (!url) return;
+      state.bgmReady = true;
+      document.getElementById('bgmStatus').style.display = 'block';
+      document.getElementById('bgmTag').textContent = `BGM 可用 · Focus Rain · 03:00`;
+      document.getElementById('badge3').classList.add('done');
+      updateGenerateBtn();
+    });
+
+    // Sliders
+    document.getElementById('podcastVol').addEventListener('input', (e) => {
+      document.getElementById('podcastVolVal').textContent = e.target.value + '%';
+    });
+    document.getElementById('bgmVol').addEventListener('input', (e) => {
+      document.getElementById('bgmVolVal').textContent = e.target.value + '%';
+    });
+
+    // Generate
+    generateBtn.addEventListener('click', () => {
+      taskError.style.display = 'none';
+      taskPanel.style.display = 'block';
+      generateBtn.disabled = true;
+      document.getElementById('badge5').classList.add('done');
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 12;
+        progressFill.style.width = Math.min(progress, 100) + '%';
+        if (progress >= 100) {
+          clearInterval(interval);
+          taskPanel.style.display = 'none';
+          step6.classList.remove('hidden');
+          state.generated = true;
+          const newAsset = {
+            id: 'mixed_' + Date.now(),
+            title: MOCK_PODCAST.title + ' - Focus Mix',
+            podcast_name: MOCK_PODCAST.podcast_name,
+            bgm_name: MOCK_BGM.title,
+            cover_color: state.accentColor,
+            cover_initial: MOCK_PODCAST.cover_initial,
+            duration_label: MOCK_PODCAST.duration_label,
+            status: 'completed',
+            created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            mix_config: {
+              podcast_volume: document.getElementById('podcastVol').value / 100,
+              bgm_volume: document.getElementById('bgmVol').value / 100,
+              bgm_loop: document.getElementById('bgmLoop').checked,
+            },
+            source_url: episodeUrl.value,
+          };
+          saveNewAsset(newAsset);
+          sessionStorage.setItem('pf_latest', newAsset.id);
+        }
+      }, 400);
+    });
+
+    document.getElementById('retryBtn')?.addEventListener('click', () => {
+      taskError.style.display = 'none';
+      generateBtn.disabled = false;
+    });
+
+    document.getElementById('playSuccessBtn').addEventListener('click', () => {
+      const id = sessionStorage.getItem('pf_latest') || 'mixed_001';
+      showGlobalPlayer(getAssetById(id));
+    });
+
+    document.getElementById('detailSuccessBtn').addEventListener('click', () => {
+      const id = sessionStorage.getItem('pf_latest') || 'mixed_001';
+      location.href = 'detail.html?id=' + id;
+    });
+
+    document.getElementById('librarySuccessBtn').addEventListener('click', () => {
+      location.href = 'library.html';
+    });
+  </script>
+</body>
+</html>

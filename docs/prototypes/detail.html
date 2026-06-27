@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440">
+  <title>Podcast Flow — 组合音频详情</title>
+  <link rel="stylesheet" href="assets/common.css">
+</head>
+<body>
+  <div class="prototype-banner">原型演示 · P03 组合音频详情 · 无下载入口</div>
+
+  <header class="app-header">
+    <a href="index.html" class="logo">Podcast Flow</a>
+    <nav class="nav-tabs">
+      <a href="index.html" class="nav-tab" data-page="create">创建</a>
+      <a href="library.html" class="nav-tab" data-page="library">我的音频库</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <a href="library.html" class="back-link">← 返回我的组合音频库</a>
+
+    <div class="detail-header">
+      <div class="cover cover-lg" id="detailCover">自</div>
+      <div>
+        <h1 id="detailTitle">—</h1>
+        <p class="meta" style="color:#8C8C8C;font-size:13px;margin-bottom:4px">播客：<span id="detailPodcast">—</span></p>
+        <p class="meta" style="color:#8C8C8C;font-size:13px;margin-bottom:4px">原链接：<span id="detailUrl">—</span></p>
+        <p class="meta" style="color:#8C8C8C;font-size:13px;margin-bottom:4px">时长：<span id="detailDuration">—</span></p>
+        <p class="meta" style="color:#8C8C8C;font-size:13px">创建时间：<span id="detailCreated">—</span></p>
+      </div>
+    </div>
+
+    <section class="inline-player">
+      <div class="player-controls">
+        <button class="play-btn" id="inlinePlayBtn">▶</button>
+        <div class="player-progress">
+          <input type="range" id="inlineProgress" min="0" max="100" value="1">
+        </div>
+        <span class="player-time"><span id="inlineCurrent">00:35</span> / <span id="inlineTotal">53:00</span></span>
+      </div>
+      <div class="slider-row" style="margin-top:12px;margin-bottom:0">
+        <label>音量</label>
+        <input type="range" min="0" max="100" value="80">
+        <span class="slider-value">80%</span>
+      </div>
+    </section>
+
+    <section class="info-section">
+      <h3>BGM 信息</h3>
+      <dl class="desc-list">
+        <dt>名称</dt><dd id="bgmName">—</dd>
+        <dt>来源</dt><dd id="bgmSource">—</dd>
+        <dt>时长</dt><dd id="bgmDuration">—</dd>
+      </dl>
+    </section>
+
+    <section class="info-section">
+      <h3>混音参数</h3>
+      <dl class="desc-list">
+        <dt>播客音量</dt><dd id="mixPodcastVol">—</dd>
+        <dt>BGM 音量</dt><dd id="mixBgmVol">—</dd>
+        <dt>BGM 循环</dt><dd id="mixLoop">—</dd>
+      </dl>
+    </section>
+
+    <div class="btn-group">
+      <button class="btn btn-danger" id="deleteDetailBtn">删除</button>
+    </div>
+  </main>
+
+  <div class="global-player" id="globalPlayer">
+    <div class="player-info">
+      <div class="cover cover-xs">自</div>
+      <div class="player-info-text">
+        <h4 class="player-title">—</h4>
+        <p class="player-podcast">—</p>
+      </div>
+    </div>
+    <div class="player-center">
+      <button class="play-btn">▶</button>
+      <div class="player-progress">
+        <input type="range" class="player-progress-input" min="0" max="100" value="1">
+      </div>
+      <span class="player-time"><span class="time-current">00:35</span> / <span class="time-total">53:00</span></span>
+    </div>
+    <div class="player-right">
+      <input type="range" min="0" max="100" value="80">
+      <button class="close-player">×</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h3>确认删除</h3>
+      <p class="modal-message">确定要删除这条组合音频吗？</p>
+      <div class="btn-group">
+        <button class="btn modal-cancel">取消</button>
+        <button class="btn btn-danger modal-confirm">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/common.js"></script>
+  <script>
+    initHeader('library');
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id') || 'mixed_001';
+    const asset = getAssetById(id);
+
+    setAccentColor(asset.cover_color);
+    document.getElementById('detailCover').style.background = asset.cover_color;
+    document.getElementById('detailCover').textContent = asset.cover_initial;
+    document.getElementById('detailTitle').textContent = asset.title;
+    document.getElementById('detailPodcast').textContent = asset.podcast_name;
+    document.getElementById('detailUrl').textContent = asset.source_url || '—';
+    document.getElementById('detailDuration').textContent = asset.duration_label;
+    document.getElementById('detailCreated').textContent = asset.created_at;
+    document.getElementById('bgmName').textContent = asset.bgm_name;
+    document.getElementById('bgmSource').textContent = '本地上传';
+    document.getElementById('bgmDuration').textContent = '03:00';
+    document.getElementById('mixPodcastVol').textContent = Math.round((asset.mix_config?.podcast_volume || 1) * 100) + '%';
+    document.getElementById('mixBgmVol').textContent = Math.round((asset.mix_config?.bgm_volume || 0.15) * 100) + '%';
+    document.getElementById('mixLoop').textContent = asset.mix_config?.bgm_loop !== false ? '开启' : '关闭';
+
+    let inlinePlaying = false;
+    document.getElementById('inlinePlayBtn').addEventListener('click', () => {
+      inlinePlaying = !inlinePlaying;
+      document.getElementById('inlinePlayBtn').textContent = inlinePlaying ? '⏸' : '▶';
+      showGlobalPlayer(asset);
+    });
+
+    document.getElementById('deleteDetailBtn').addEventListener('click', () => {
+      showModal('确定要删除这条组合音频吗？删除后不可恢复。', () => {
+        let assets = JSON.parse(sessionStorage.getItem('pf_assets') || 'null') || MOCK_ASSETS;
+        assets = assets.filter((a) => a.id !== id);
+        sessionStorage.setItem('pf_assets', JSON.stringify(assets));
+        location.href = 'library.html';
+      });
+    });
+  </script>
+</body>
+</html>

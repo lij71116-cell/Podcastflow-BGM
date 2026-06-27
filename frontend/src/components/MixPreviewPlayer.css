@@ -1,0 +1,29 @@
+.mix-preview-player {
+  margin-top: 12px;
+}
+
+.mix-preview-player-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.mix-preview-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mix-preview-player-progress {
+  flex: 1;
+  margin: 0;
+}
+
+.mix-preview-player-time {
+  font-size: 12px;
+  color: #8c8c8c;
+  white-space: nowrap;
+  min-width: 90px;
+  text-align: right;
+}
