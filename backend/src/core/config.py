@@ -142,7 +142,23 @@ def load_settings(env_path: Path | None = None) -> AppSettings:
 
 
 def get_settings() -> AppSettings:
-    """返回已加载的配置单例。"""
+    """返回已加载的配置单例；关键项在运行时再次对齐 os.environ。"""
+    global _settings  # noqa: PLW0603
     if _settings is None:
-        return load_settings()
+        load_settings()
+    else:
+        _apply_runtime_env_overrides(_settings)
     return _settings
+
+
+def _apply_runtime_env_overrides(settings: AppSettings) -> None:
+    """Railway/Fly 等在进程启动后注入的环境变量，确保覆盖默认值。"""
+    project_root = Path(__file__).parent.parent.parent
+    for env_key, field_name in _ENV_KEY_MAP.items():
+        env_value = os.environ.get(env_key)
+        if env_value is None or env_value == "":
+            continue
+        value = _coerce(env_key, env_value)
+        if field_name in ("database_path", "storage_root"):
+            value = _resolve_project_path(project_root, str(value))
+        setattr(settings, field_name, value)

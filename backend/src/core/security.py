@@ -1,5 +1,6 @@
 """密码哈希与 JWT 工具。"""
 
+import os
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -24,7 +25,8 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 
 def create_access_token(user_id: str) -> str:
     settings = get_settings()
-    if not settings.jwt_secret.strip():
+    secret = settings.jwt_secret.strip() or os.environ.get("JWT_SECRET", "").strip()
+    if not secret:
         raise AuthConfigError
     expire = datetime.now(tz=UTC) + timedelta(hours=settings.jwt_expire_hours)
     payload = {"sub": user_id, "exp": expire}
