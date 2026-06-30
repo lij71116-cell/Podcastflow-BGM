@@ -11,10 +11,13 @@ from src.services.qishui_parser_service import (
     _parse_ugc_video_page,
 )
 
+from tests.conftest import register_test_user
+
 SAMPLE_ROUTER_HTML = """
 <script>_ROUTER_DATA = {"loaderData":{"track_page":{"track_id":"123","audioWithLyricsOption":{
 "trackName":"矛盾","artistName":"z²","duration":157.546,
-"group_playable_level":"free","url":"https://example.com/audio.m4a?mime_type=audio_mp4","encrypt":false
+"group_playable_level":"free","url":"https://example.com/audio.m4a?mime_type=audio_mp4","encrypt":false,
+"coverURL":"https://example.com/cover.jpg"
 }}}};</script>
 """
 
@@ -36,6 +39,7 @@ class TestQishuiParser:
         assert parsed.title == "矛盾 - z²"
         assert parsed.audio_url.startswith("https://example.com/audio.m4a")
         assert parsed.duration == 157
+        assert parsed.cover_url == "https://example.com/cover.jpg"
 
     def test_parse_paid_track_rejected(self) -> None:
         paid_html = SAMPLE_ROUTER_HTML.replace('"free"', '"pay"')
@@ -65,7 +69,7 @@ class TestQishuiParser:
 
 class TestValidateQishuiApi:
     def test_invalid_url(self, client: TestClient) -> None:
-        client.get("/api/session")
+        register_test_user(client)
         response = client.post(
             "/api/bgm/validate-qishui",
             json={"share_url": "https://example.com/not-qishui"},
@@ -74,6 +78,7 @@ class TestValidateQishuiApi:
         assert response.json()["code"] == 40007
 
     def test_validate_success(self, client: TestClient, test_settings) -> None:
+        register_test_user(client)
         from src.services.qishui_parser_service import ParsedQishuiTrack
 
         parsed = ParsedQishuiTrack(
@@ -82,10 +87,12 @@ class TestValidateQishuiApi:
             title="矛盾 - z²",
             audio_url="https://example.com/audio.m4a?mime_type=audio_mp4",
             duration=157,
+            cover_url="https://example.com/cover.jpg",
         )
         mock_audio = AsyncMock(status_code=200, content=b"fake-audio", headers={"content-type": "audio/mp4"})
+        mock_cover = AsyncMock(status_code=200, content=b"fake-cover", headers={"content-type": "image/jpeg"})
         mock_client = AsyncMock()
-        mock_client.get = AsyncMock(return_value=mock_audio)
+        mock_client.get = AsyncMock(side_effect=[mock_audio, mock_cover])
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
@@ -94,7 +101,6 @@ class TestValidateQishuiApi:
             patch("src.services.bgm_service.httpx.AsyncClient", return_value=mock_client),
             patch("src.services.bgm_service.probe_audio_file", AsyncMock(return_value=AudioProbeResult(duration=157, format="m4a"))),
         ):
-            client.get("/api/session")
             response = client.post("/api/bgm/validate-qishui", json={"share_url": SHARE_URL})
 
         assert response.status_code == 200
@@ -104,4 +110,5 @@ class TestValidateQishuiApi:
         assert data["source_type"] == "qishui_share"
         assert data["title"] == "矛盾 - z²"
         assert data["status"] == "available"
+        assert data["cover_url"] == f"/api/bgm/{data['id']}/cover"
         assert "output_file_path" not in json.dumps(data)

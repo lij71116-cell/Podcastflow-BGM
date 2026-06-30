@@ -4,27 +4,36 @@ import {
   Button,
   Input,
   Progress,
-  Radio,
   Slider,
   Switch,
-  Tag,
   Typography,
   Upload,
   message,
 } from 'antd'
-import { UploadOutlined, SoundOutlined } from '@ant-design/icons'
+import {
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+  CheckCircleOutlined,
+  CloudUploadOutlined,
+  CustomerServiceOutlined,
+  SoundOutlined,
+  SyncOutlined,
+  UnorderedListOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { AppHeader } from '@/components/AppHeader'
-import { StepCard } from '@/components/StepCard'
 import { uploadBgm, validateBgmUrl, validateQishuiShare } from '@/services/bgmService'
 import { createMixedAudio, getMixTask } from '@/services/mixedAudioService'
 import { parsePodcast } from '@/services/podcastService'
 import { isXiaoyuzhouUrl } from '@/utils/format'
+import { extractAccentColorFromImage } from '@/utils/coverColor'
 import { MOCK_COVER_COLOR } from '@/mocks/data'
 import type { BgmSourceDTO, MixedAudioAssetDTO, PodcastSourceDTO } from '@/types/api'
 import '@/components/StepCard.css'
 import { MixPreviewPlayer } from '@/components/MixPreviewPlayer'
 import { playMixedAsset } from '@/utils/player'
+import { CreateEventAxis } from './CreateEventAxis'
+import type { CreateFlowStep } from './createFlowSteps'
+import './CreatePage.css'
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -34,6 +43,9 @@ function formatDuration(seconds: number): string {
 
 export default function CreatePage() {
   const navigate = useNavigate()
+  const [activeStep, setActiveStep] = useState<CreateFlowStep>(1)
+  const [maxReachedStep, setMaxReachedStep] = useState<CreateFlowStep>(1)
+
   const [sourceUrl, setSourceUrl] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
@@ -52,8 +64,13 @@ export default function CreatePage() {
   const [bgmVolume, setBgmVolume] = useState(15)
   const [bgmPlaybackRate, setBgmPlaybackRate] = useState(1.0)
   const [bgmLoop, setBgmLoop] = useState(true)
+  const [fadeInEnabled, setFadeInEnabled] = useState(true)
+  const [fadeOutEnabled, setFadeOutEnabled] = useState(true)
+  const [fadeInSec, setFadeInSec] = useState(3)
+  const [fadeOutSec, setFadeOutSec] = useState(5)
 
   const [previewPlayToken, setPreviewPlayToken] = useState(0)
+  const [previewMasterVolume, setPreviewMasterVolume] = useState(80)
   const [previewError, setPreviewError] = useState<string | null>(null)
 
   const [generating, setGenerating] = useState(false)
@@ -66,8 +83,56 @@ export default function CreatePage() {
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const canGenerate = Boolean(podcast && bgm?.status === 'available') && !generating && !success
-  const canPreview = Boolean(podcast && bgm?.status === 'available')
+  const step1Complete = Boolean(podcast && bgm?.status === 'available')
+  const canGenerate = step1Complete && !generating && !success
+  const canPreview = step1Complete
+
+  const buildMixConfig = useCallback(
+    () => ({
+      podcast_volume: podcastVolume / 100,
+      podcast_playback_rate: podcastPlaybackRate,
+      bgm_volume: bgmVolume / 100,
+      bgm_playback_rate: bgmPlaybackRate,
+      bgm_loop: bgmLoop,
+      fade_in: fadeInEnabled ? fadeInSec : 0,
+      fade_out: fadeOutEnabled ? fadeOutSec : 0,
+    }),
+    [
+      podcastVolume,
+      podcastPlaybackRate,
+      bgmVolume,
+      bgmPlaybackRate,
+      bgmLoop,
+      fadeInEnabled,
+      fadeInSec,
+      fadeOutEnabled,
+      fadeOutSec,
+    ],
+  )
+
+  const goToStep = (step: CreateFlowStep) => {
+    if (step <= maxReachedStep) setActiveStep(step)
+  }
+
+  const goNext = () => {
+    if (activeStep === 1) {
+      if (!step1Complete) {
+        message.warning('请先完成播客解析与 BGM 添加')
+        return
+      }
+      setActiveStep(2)
+      setMaxReachedStep((prev) => (prev < 2 ? 2 : prev))
+      return
+    }
+    if (activeStep === 2) {
+      setActiveStep(3)
+      setMaxReachedStep(3)
+    }
+  }
+
+  const goPrev = () => {
+    if (activeStep > 1) setActiveStep((s) => (s - 1) as CreateFlowStep)
+  }
 
   const handleParse = async () => {
     const url = sourceUrl.trim()
@@ -83,7 +148,12 @@ export default function CreatePage() {
     try {
       const data = await parsePodcast(url)
       setPodcast(data)
-      setAccentColor(MOCK_COVER_COLOR)
+      if (data.cover_url) {
+        const accent = await extractAccentColorFromImage(data.cover_url)
+        setAccentColor(accent)
+      } else {
+        setAccentColor(MOCK_COVER_COLOR)
+      }
       message.success('播客解析成功')
     } catch (e) {
       const msg = e instanceof Error ? e.message : '播客解析失败'
@@ -164,22 +234,19 @@ export default function CreatePage() {
 
   const handleGenerate = async () => {
     if (!podcast || !bgm) return
+    setActiveStep(3)
+    setMaxReachedStep(3)
     setGenerating(true)
     setTaskError(null)
     setSuccess(false)
     setTaskProgress(0)
     setTaskStatus('pending')
     try {
+      const mixConfig = buildMixConfig()
       const result = await createMixedAudio({
         podcast_source_id: podcast.id,
         bgm_source_id: bgm.id,
-        mix_config: {
-          podcast_volume: podcastVolume / 100,
-          podcast_playback_rate: podcastPlaybackRate,
-          bgm_volume: bgmVolume / 100,
-          bgm_playback_rate: bgmPlaybackRate,
-          bgm_loop: bgmLoop,
-        },
+        mix_config: mixConfig,
       })
       setMixedAudioId(result.mixed_audio.id)
       setTaskStatus(result.task.status)
@@ -187,13 +254,7 @@ export default function CreatePage() {
       const assetOnComplete = (): MixedAudioAssetDTO => ({
         ...result.mixed_audio,
         status: 'completed',
-        mix_config: {
-          podcast_volume: podcastVolume / 100,
-          podcast_playback_rate: podcastPlaybackRate,
-          bgm_volume: bgmVolume / 100,
-          bgm_playback_rate: bgmPlaybackRate,
-          bgm_loop: bgmLoop,
-        },
+        mix_config: mixConfig,
       })
 
       let pollErrors = 0
@@ -224,7 +285,7 @@ export default function CreatePage() {
             setTaskError(msg)
           }
         }
-      }, 3000)
+      }, 2000)
     } catch (e) {
       setGenerating(false)
       const msg = e instanceof Error ? e.message : '创建合成任务失败'
@@ -232,46 +293,32 @@ export default function CreatePage() {
     }
   }
 
-  return (
-    <>
-      <AppHeader />
-      <main className="page-content">
-        <section className="hero-section">
-          <h1>为小宇宙播客添加专注 BGM</h1>
-          <p>输入小宇宙链接，添加 BGM，生成可保存、可复听的组合播客</p>
-          <span className="scope-tag">当前仅支持小宇宙公开单集链接</span>
-        </section>
-
-        <StepCard step={1} title="输入小宇宙播客链接" done={Boolean(podcast)}>
-          <Input.Group compact style={{ display: 'flex' }}>
+  const renderUploadStep = () => (
+    <div className="create-step1-wrap">
+      <div className="create-panel">
+        <section className="create-panel-section">
+          <div className="create-panel-section-title">
+            <span className="create-panel-icon create-panel-icon--podcast">
+              <CustomerServiceOutlined />
+            </span>
+            小宇宙播客
+          </div>
+          <div className="create-parse-row">
             <Input
-              style={{ flex: 1 }}
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
-              placeholder="https://www.xiaoyuzhoufm.com/episode/..."
+              placeholder="粘贴小宇宙单集链接，例如 https://www.xiaoyuzhoufm.com/episode/..."
             />
             <Button type="primary" loading={parsing} onClick={handleParse}>
               解析播客
             </Button>
-          </Input.Group>
-          <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
-            支持格式：xiaoyuzhoufm.com/episode/&#123;单集ID&#125;
+          </div>
+          <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
+            支持直接从 App 复制单集分享链接
           </Typography.Text>
-          {parseError && (
-            <Alert type="error" message={parseError} showIcon style={{ marginTop: 12 }} />
-          )}
-        </StepCard>
-
-        {podcast && (
-          <StepCard
-            step={2}
-            title="播客信息"
-            done
-            accent
-            accentColor={accentColor}
-            extra={<Tag color="success">解析成功</Tag>}
-          >
-            <div className="podcast-info-row">
+          {parseError && <Alert type="error" message={parseError} showIcon />}
+          {podcast && (
+            <div className="create-parsed-card">
               <div className="cover-placeholder" style={{ background: accentColor }}>
                 {podcast.cover_url ? (
                   <img src={podcast.cover_url} alt="" className="cover-img" />
@@ -279,42 +326,61 @@ export default function CreatePage() {
                   podcast.podcast_name.slice(0, 1)
                 )}
               </div>
-              <div>
-                <Typography.Title level={5} style={{ marginTop: 0 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Typography.Title level={5} style={{ marginTop: 0 }} ellipsis>
                   {podcast.title}
                 </Typography.Title>
-                <Typography.Text type="secondary">播客：{podcast.podcast_name}</Typography.Text>
-                <br />
                 <Typography.Text type="secondary">
-                  时长：{formatDuration(podcast.duration)}
-                </Typography.Text>
-                <br />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {podcast.description}
+                  播客：{podcast.podcast_name} · {formatDuration(podcast.duration)}
                 </Typography.Text>
               </div>
+              <span className="create-parsed-badge">
+                <CheckCircleOutlined /> 解析成功
+              </span>
             </div>
-          </StepCard>
-        )}
+          )}
+        </section>
 
-        <StepCard step={3} title="添加 BGM" done={bgm?.status === 'available'}>
-          <Radio.Group
-            value={bgmMode}
-            onChange={(e) => setBgmMode(e.target.value as 'upload' | 'url' | 'qishui')}
-            style={{ marginBottom: 12 }}
-          >
-            <Radio value="upload">上传本地 BGM</Radio>
-            <Radio value="url">输入 BGM 音频链接</Radio>
-            <Radio value="qishui">汽水音乐分享链接</Radio>
-          </Radio.Group>
+        <hr className="create-panel-divider" />
+
+        <section className="create-panel-section">
+          <div className="create-panel-section-title">
+            <span className="create-panel-icon create-panel-icon--bgm">
+              <SoundOutlined />
+            </span>
+            添加 BGM
+          </div>
+          <div className="create-bgm-tabs">
+            {(
+              [
+                ['upload', '本地上传'],
+                ['url', '音频链接'],
+                ['qishui', '汽水音乐链接'],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                className={bgmMode === mode ? 'active' : ''}
+                onClick={() => setBgmMode(mode)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {bgmMode === 'upload' ? (
             <Upload beforeUpload={handleBgmUpload} showUploadList={false} accept=".mp3,.m4a,.wav">
-              <Button icon={<UploadOutlined />} loading={bgmLoading}>
-                选择文件
-              </Button>
-              <Typography.Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
-                支持 mp3 / m4a / wav，最大 50MB
-              </Typography.Text>
+              <div className="create-bgm-dropzone">
+                <div className="create-bgm-dropzone-icon">
+                  <CloudUploadOutlined />
+                </div>
+                <Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
+                  点击或拖拽上传 BGM
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                  支持 MP3, WAV 格式，最大 100MB
+                </Typography.Text>
+              </div>
             </Upload>
           ) : bgmMode === 'url' ? (
             <Input.Group compact style={{ display: 'flex' }}>
@@ -342,102 +408,132 @@ export default function CreatePage() {
             </Input.Group>
           )}
           {bgmError && (
-            <Typography.Text type="danger" style={{ display: 'block', marginTop: 8 }}>
+            <Typography.Text type="danger" style={{ display: 'block' }}>
               {bgmError}
             </Typography.Text>
           )}
-          {bgm && (
-            <div style={{ marginTop: 12 }}>
-              <Tag color={bgm.status === 'available' ? 'success' : 'error'}>
-                BGM {bgm.status === 'available' ? '可用' : '不可用'} · {bgm.title} ·{' '}
-                {formatDuration(bgm.duration)}
-              </Tag>
-            </div>
+          {bgm?.status === 'available' && (
+            <span className="create-bgm-success-tag">
+              <CheckCircleOutlined /> BGM 可用 · {bgm.title} · {formatDuration(bgm.duration)}
+            </span>
           )}
-        </StepCard>
+        </section>
+      </div>
 
-        <StepCard step={4} title="混音配置">
-          <section className="mix-config-subsection">
-            <Typography.Text strong className="mix-config-subsection-title">
-              播客
-            </Typography.Text>
-            <div style={{ marginBottom: 12 }}>
-              <Typography.Text>音量</Typography.Text>
-              <Slider
-                min={0}
-                max={100}
-                value={podcastVolume}
-                onChange={setPodcastVolume}
-                tooltip={{ formatter: (v) => `${v}%` }}
-              />
-              <Typography.Text type="secondary">{podcastVolume}%</Typography.Text>
+      <div className="create-step1-footer">
+        <Button
+          type="primary"
+          size="large"
+          className="create-next-btn"
+          disabled={!step1Complete}
+          onClick={goNext}
+        >
+          下一步：混音配置 <ArrowRightOutlined />
+        </Button>
+      </div>
+    </div>
+  )
+
+  const renderMixStep = () => (
+    <>
+      <div className="create-mix-layout">
+        <div className="create-mix-main">
+          <section className="create-mix-card">
+            <div className="create-mix-card-header">
+              <h3>
+                <CustomerServiceOutlined /> 播客
+              </h3>
             </div>
-            <div>
-              <Typography.Text>播放倍速</Typography.Text>
-              <Slider
-                min={0.6}
-                max={2}
-                step={0.1}
-                value={podcastPlaybackRate}
-                onChange={setPodcastPlaybackRate}
-                tooltip={{ formatter: (v) => `${(v ?? 1).toFixed(1)}x` }}
-              />
-              <Typography.Text type="secondary">{podcastPlaybackRate.toFixed(1)}x</Typography.Text>
+            <div className="create-slider-row">
+              <div className="create-slider-label">
+                <span>音量</span>
+                <span className="create-slider-value">{podcastVolume}%</span>
+              </div>
+              <Slider min={0} max={100} value={podcastVolume} onChange={setPodcastVolume} />
+            </div>
+            <div className="create-slider-row">
+              <div className="create-slider-label">
+                <span>倍速</span>
+                <span className="create-slider-value">{podcastPlaybackRate.toFixed(1)}x</span>
+              </div>
+                <Slider min={0.5} max={2} step={0.1} value={podcastPlaybackRate} onChange={setPodcastPlaybackRate} />
             </div>
           </section>
 
-          <section className="mix-config-subsection">
-            <Typography.Text strong className="mix-config-subsection-title">
-              BGM
-            </Typography.Text>
-            <div style={{ marginBottom: 12 }}>
-              <Typography.Text>音量</Typography.Text>
-              <Slider
-                min={0}
-                max={100}
-                value={bgmVolume}
-                onChange={setBgmVolume}
-                tooltip={{ formatter: (v) => `${v}%` }}
-              />
-              <Typography.Text type="secondary">{bgmVolume}%</Typography.Text>
+          <section className="create-mix-card">
+            <div className="create-mix-card-header">
+              <h3>
+                <SoundOutlined /> 背景音乐 (BGM)
+              </h3>
+              {bgm?.status === 'available' && <span className="create-mix-badge">已选择 1 首</span>}
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <Typography.Text>播放倍速</Typography.Text>
-              <Slider
-                min={0.6}
-                max={2}
-                step={0.1}
-                value={bgmPlaybackRate}
-                onChange={setBgmPlaybackRate}
-                tooltip={{ formatter: (v) => `${(v ?? 1).toFixed(1)}x` }}
-              />
-              <Typography.Text type="secondary">{bgmPlaybackRate.toFixed(1)}x</Typography.Text>
+            <div className="create-slider-row">
+              <div className="create-slider-label">
+                <span>音量</span>
+                <span className="create-slider-value">{bgmVolume}%</span>
+              </div>
+              <Slider min={0} max={100} value={bgmVolume} onChange={setBgmVolume} />
             </div>
-            <Switch checked={bgmLoop} onChange={setBgmLoop} />{' '}
-            <Typography.Text>BGM 自动循环铺满播客</Typography.Text>
+            <div className="create-slider-row">
+              <div className="create-slider-label">
+                <span>倍速</span>
+                <span className="create-slider-value">{bgmPlaybackRate.toFixed(1)}x</span>
+              </div>
+              <Slider min={0.5} max={2} step={0.1} value={bgmPlaybackRate} onChange={setBgmPlaybackRate} />
+            </div>
+            <hr className="create-mix-divider" />
+            <div className="create-fade-row">
+              <div className="fade-label">
+                <Switch checked={fadeInEnabled} onChange={setFadeInEnabled} />
+                <span>淡入 (Fade In)</span>
+              </div>
+              <div className="fade-slider-wrap">
+                <Slider min={1} max={10} disabled={!fadeInEnabled} value={fadeInSec} onChange={setFadeInSec} />
+                <span className="create-slider-value">{fadeInSec}s</span>
+              </div>
+            </div>
+            <div className="create-fade-row">
+              <div className="fade-label">
+                <Switch checked={fadeOutEnabled} onChange={setFadeOutEnabled} />
+                <span>淡出 (Fade Out)</span>
+              </div>
+              <div className="fade-slider-wrap">
+                <Slider min={1} max={10} disabled={!fadeOutEnabled} value={fadeOutSec} onChange={setFadeOutSec} />
+                <span className="create-slider-value">{fadeOutSec}s</span>
+              </div>
+            </div>
+            <div className="create-fade-row">
+              <div className="fade-label">
+                <Switch checked={bgmLoop} onChange={setBgmLoop} />
+                <span>BGM 自动循环铺满播客</span>
+              </div>
+            </div>
           </section>
+        </div>
 
-          <section className="mix-config-subsection">
-            <Typography.Text strong className="mix-config-subsection-title">
-              试听效果
-            </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
-              按播客与 BGM 各自的音量、倍速叠加试听；播放中可随时调整，不会中断
-            </Typography.Text>
-            <Button icon={<SoundOutlined />} disabled={!canPreview} onClick={handlePreview}>
-              试听
-            </Button>
-            {!podcast || bgm?.status !== 'available' ? (
-              <Typography.Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
-                请先完成播客解析与 BGM 校验
-              </Typography.Text>
-            ) : null}
+        <div className="create-mix-preview">
+          <section className="create-preview-card">
+            <div className="create-preview-idle">
+              <div className="create-preview-play-circle">
+                <SoundOutlined />
+              </div>
+              <h3>生成试听片段</h3>
+              <Button
+                type="primary"
+                disabled={!canPreview || previewPlayToken > 0}
+                onClick={handlePreview}
+                block
+                className={previewPlayToken > 0 ? 'create-preview-start-btn is-active' : 'create-preview-start-btn'}
+              >
+                {previewPlayToken > 0 ? '试听中…' : '开始试听'}
+              </Button>
+            </div>
             {previewError && (
               <Alert type="error" message={previewError} showIcon style={{ marginTop: 12 }} />
             )}
-            {podcast && bgm && (
+            {previewPlayToken > 0 && podcast && bgm && (
               <MixPreviewPlayer
-                key={`${podcast.id}-${bgm.id}`}
+                key={`${podcast.id}-${bgm.id}-${previewPlayToken}`}
                 podcastId={podcast.id}
                 bgmId={bgm.id}
                 podcastDurationSec={podcast.duration}
@@ -446,64 +542,200 @@ export default function CreatePage() {
                 bgmVolume={bgmVolume}
                 bgmPlaybackRate={bgmPlaybackRate}
                 bgmLoop={bgmLoop}
+                masterVolume={previewMasterVolume}
+                onMasterVolumeChange={setPreviewMasterVolume}
                 playToken={previewPlayToken}
                 onError={setPreviewError}
               />
             )}
           </section>
-        </StepCard>
+        </div>
+      </div>
 
-        <StepCard step={5} title="生成组合音频" done={success}>
-          <Button type="primary" disabled={!canGenerate} loading={generating} onClick={handleGenerate}>
-            生成组合音频
-          </Button>
-          {(generating || taskStatus) && !success && (
-            <div style={{ marginTop: 16 }}>
-              <Tag color="warning">{taskStatus === 'mixing' ? '合成中' : '等待中'}</Tag>
-              <Progress percent={taskProgress} status="active" />
-              <Typography.Text type="secondary">正在使用 FFmpeg 合成完整组合音频…</Typography.Text>
+      <div className="create-mix-footer">
+        <Button className="create-mix-nav-btn create-prev-btn" icon={<ArrowLeftOutlined />} onClick={goPrev}>
+          上一步
+        </Button>
+        <Button type="primary" className="create-mix-nav-btn create-next-btn" onClick={goNext}>
+          下一步：确认与生成 <ArrowRightOutlined />
+        </Button>
+      </div>
+    </>
+  )
+
+  const renderConfirmStep = () => (
+    <div className="create-confirm-wrap">
+      {!generating && !success && (
+        <div className="create-confirm-state">
+          <div className="create-confirm-orbit">
+            <div className="create-confirm-cover" style={{ background: accentColor }}>
+              {podcast?.cover_url ? (
+                <img src={podcast.cover_url} alt="" />
+              ) : (
+                podcast?.podcast_name.slice(0, 1) ?? '专'
+              )}
             </div>
-          )}
-          {taskError && (
+          </div>
+          <h1 className="create-confirm-title">准备生成组合音频</h1>
+          <p className="create-confirm-subtitle">将使用 FFmpeg 合成完整 MP3，并保存到你的个人音频库</p>
+
+          <div className="create-glass-card">
+            <h2>
+              <UnorderedListOutlined /> 请进行任务内容确认
+            </h2>
+            <div className="create-glass-meta">
+              <p>
+                <strong>播客:</strong> {podcast?.title ?? '—'}
+              </p>
+              <p>
+                <strong>BGM:</strong> {bgm?.title ?? '—'}
+              </p>
+            </div>
+            <div className="create-config-grid">
+              <div>
+                <label>播客参数</label>
+                <span>
+                  音量 {podcastVolume}% / 倍速 {podcastPlaybackRate.toFixed(1)}x
+                </span>
+              </div>
+              <div>
+                <label>BGM参数</label>
+                <span>
+                  音量 {bgmVolume}% / 倍速 {bgmPlaybackRate.toFixed(1)}x / 自动循环{' '}
+                  {bgmLoop ? '开启' : '关闭'}
+                </span>
+                <span style={{ display: 'block', marginTop: 4 }}>
+                  淡入 {fadeInEnabled ? `${fadeInSec}秒` : '关'} / 淡出{' '}
+                  {fadeOutEnabled ? `${fadeOutSec}秒` : '关'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="create-confirm-actions">
+            <Button className="create-confirm-prev-btn" icon={<ArrowLeftOutlined />} onClick={goPrev}>
+              上一步
+            </Button>
+            <Button
+              type="primary"
+              className="create-confirm-generate-btn"
+              disabled={!canGenerate}
+              onClick={handleGenerate}
+            >
+              生成组合音频
+            </Button>
+          </div>
+          {taskError && !generating && (
             <Alert
               type="error"
               message={taskError}
-              style={{ marginTop: 12 }}
+              style={{ marginTop: 16, width: '100%' }}
               action={
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setTaskError(null)
-                    handleGenerate()
-                  }}
-                >
-                  重新生成
+                <Button size="small" onClick={() => { setTaskError(null); void handleGenerate() }}>
+                  重试
                 </Button>
               }
             />
           )}
-        </StepCard>
+        </div>
+      )}
 
-        {success && (
-          <StepCard step={6} title="生成成功" done extra={<Tag color="success">已完成</Tag>}>
-            <Typography.Paragraph>已保存到「我的组合音频库」</Typography.Paragraph>
+      {generating && !success && (
+        <div className="create-progress-overlay">
+          <div className="create-progress-icon">
+            <SyncOutlined spin />
+          </div>
+          <h2 className="create-confirm-title">正在合成…</h2>
+          <Progress
+            percent={taskProgress}
+            status="active"
+            style={{ width: '100%', maxWidth: 400, margin: '16px 0' }}
+          />
+          <Typography.Text type="secondary">
+            {taskStatus === 'mixing' ? '合成中' : '等待中'} · 预计还需 1–3 分钟，请勿关闭页面
+          </Typography.Text>
+          {taskError && (
+            <Alert
+              type="error"
+              message={taskError}
+              style={{ marginTop: 16, width: '100%' }}
+              action={
+                <Button size="small" onClick={() => { setTaskError(null); void handleGenerate() }}>
+                  重试
+                </Button>
+              }
+            />
+          )}
+        </div>
+      )}
+
+      {success && (
+        <div className="create-confirm-state">
+          <div className="create-success-icon">
+            <CheckCircleOutlined />
+          </div>
+          <h2 className="create-confirm-title">生成成功</h2>
+          <p className="create-confirm-subtitle">组合音频已保存，可在任意设备登录后播放</p>
+          <div className="create-success-actions">
             <Button
               type="primary"
-              style={{ marginRight: 8 }}
+              className="create-success-btn"
+              icon={<SoundOutlined />}
               onClick={() => completedAsset && playMixedAsset(completedAsset)}
             >
               播放
             </Button>
             <Button
-              style={{ marginRight: 8 }}
+              className="create-success-btn create-success-btn--secondary"
               onClick={() => mixedAudioId && navigate(`/detail/${mixedAudioId}`)}
             >
               查看详情
             </Button>
-            <Button onClick={() => navigate('/library')}>进入音频库</Button>
-          </StepCard>
-        )}
-      </main>
-    </>
+            <Button
+              className="create-success-btn create-success-btn--outline"
+              onClick={() => navigate('/library')}
+            >
+              我的音频库
+            </Button>
+          </div>
+          <button
+            type="button"
+            className="create-restart-link"
+            onClick={() => {
+              setSuccess(false)
+              setActiveStep(1)
+              setMaxReachedStep(1)
+              setPodcast(null)
+              setBgm(null)
+              setSourceUrl('')
+              setMixedAudioId(null)
+              setCompletedAsset(null)
+            }}
+          >
+            再创建一个
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <main className="create-page">
+      <section className="create-hero">
+        <span className="scope-tag">当前仅支持小宇宙公开单集链接</span>
+        <h1>为小宇宙播客添加专注 BGM</h1>
+        <p>按步骤完成内容上传、混音配置与生成</p>
+      </section>
+
+      <CreateEventAxis
+        activeStep={activeStep}
+        maxReachedStep={maxReachedStep}
+        onStepClick={goToStep}
+      />
+
+      {activeStep === 1 && renderUploadStep()}
+      {activeStep === 2 && renderMixStep()}
+      {activeStep === 3 && renderConfirmStep()}
+    </main>
   )
 }

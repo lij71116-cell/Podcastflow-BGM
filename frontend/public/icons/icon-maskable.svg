@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Podcast Flow">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E5248"/>
+      <stop offset="1" stop-color="#1A3C34"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="188" cy="256" r="28" fill="none" stroke="#FAF9F5" stroke-width="14"/>
+  <circle cx="188" cy="256" r="8" fill="#FAF9F5"/>
+  <path
+    d="M228 204c24 0 44 12 56 30"
+    fill="none"
+    stroke="#A6CFC4"
+    stroke-width="8"
+    stroke-linecap="round"
+    opacity="0.85"
+  />
+  <g fill="#FAF9F5">
+    <rect x="268" y="220" width="20" height="72" rx="10"/>
+    <rect x="302" y="198" width="20" height="116" rx="10" opacity="0.92"/>
+    <rect x="336" y="234" width="20" height="44" rx="10" opacity="0.72"/>
+  </g>
+  <path
+    d="M236 312c30 8 60 8 90 0"
+    fill="none"
+    stroke="#A6CFC4"
+    stroke-width="7"
+    stroke-linecap="round"
+    opacity="0.55"
+  />
+</svg>

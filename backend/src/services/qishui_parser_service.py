@@ -44,6 +44,7 @@ class ParsedQishuiTrack:
     title: str
     audio_url: str
     duration: int
+    cover_url: str = ""
 
 
 def is_qishui_share_url(url: str) -> bool:
@@ -132,6 +133,7 @@ def _parse_track_page(html: str, share_url: str, track_id: str) -> ParsedQishuiT
 
     duration_raw = option.get("duration")
     duration = int(float(duration_raw)) if duration_raw else 0
+    cover_url = (option.get("coverURL") or option.get("coverUrl") or "").strip()
 
     return ParsedQishuiTrack(
         track_id=track_id,
@@ -139,6 +141,7 @@ def _parse_track_page(html: str, share_url: str, track_id: str) -> ParsedQishuiT
         title=title,
         audio_url=audio_url,
         duration=duration,
+        cover_url=cover_url,
     )
 
 
@@ -160,6 +163,7 @@ def _parse_ugc_video_page(html: str, share_url: str, video_id: str) -> ParsedQis
 
     duration_raw = option.get("duration")
     duration = int(float(duration_raw)) if duration_raw else 0
+    cover_url = (option.get("coverURL") or option.get("coverUrl") or "").strip()
 
     return ParsedQishuiTrack(
         track_id=video_id,
@@ -167,6 +171,7 @@ def _parse_ugc_video_page(html: str, share_url: str, video_id: str) -> ParsedQis
         title=title,
         audio_url=media_url,
         duration=duration,
+        cover_url=cover_url,
     )
 
 

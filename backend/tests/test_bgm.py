@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from src.core.ffprobe import AudioProbeResult
 from src.services.bgm_exceptions import BgmUrlUnavailableError, FfprobeUnavailableError
 
+from tests.conftest import register_test_user
+
 
 def _mock_probe() -> AsyncMock:
     return AsyncMock(return_value=AudioProbeResult(duration=180, format="mp3"))
@@ -14,6 +16,7 @@ def _mock_probe() -> AsyncMock:
 
 class TestBgmUpload:
     def test_unsupported_format(self, client: TestClient) -> None:
+        register_test_user(client)
         response = client.post(
             "/api/bgm/upload",
             files={"file": ("test.txt", b"hello", "text/plain")},
@@ -23,6 +26,7 @@ class TestBgmUpload:
         assert body["code"] == 40003
 
     def test_file_too_large(self, client: TestClient, test_settings) -> None:
+        register_test_user(client)
         test_settings.max_bgm_file_size_mb = 1
         big = b"x" * (1024 * 1024 + 1)
         with patch("src.services.bgm_service.probe_audio_file", _mock_probe()):
@@ -34,6 +38,7 @@ class TestBgmUpload:
         assert response.json()["code"] == 40004
 
     def test_upload_success(self, client: TestClient, test_settings) -> None:
+        register_test_user(client)
         with patch("src.services.bgm_service.probe_audio_file", _mock_probe()):
             response = client.post(
                 "/api/bgm/upload",
@@ -53,6 +58,7 @@ class TestBgmUpload:
         assert any(bgm_dir.glob("*.mp3"))
 
     def test_ffprobe_unavailable(self, client: TestClient) -> None:
+        register_test_user(client)
         with patch(
             "src.services.bgm_service.probe_audio_file",
             AsyncMock(side_effect=FfprobeUnavailableError("音频探测服务不可用，请安装 FFmpeg（ffprobe）")),
@@ -67,6 +73,7 @@ class TestBgmUpload:
 
 class TestBgmValidateUrl:
     def test_invalid_url(self, client: TestClient) -> None:
+        register_test_user(client)
         response = client.post(
             "/api/bgm/validate-url",
             json={"source_url": "ftp://example.com/a.mp3"},
@@ -75,6 +82,7 @@ class TestBgmValidateUrl:
         assert response.json()["code"] == 40005
 
     def test_url_unavailable(self, client: TestClient) -> None:
+        register_test_user(client)
         mock_response = AsyncMock(status_code=404, content=b"", headers={})
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(return_value=mock_response)
@@ -90,6 +98,7 @@ class TestBgmValidateUrl:
         assert response.json()["code"] == 40005
 
     def test_validate_success(self, client: TestClient, test_settings) -> None:
+        register_test_user(client)
         mock_response = AsyncMock(
             status_code=200,
             content=b"fake-mp3-bytes",
@@ -134,7 +143,7 @@ class TestBgmValidateUrl:
             service = BgmService(db=AsyncMock())  # type: ignore[arg-type]
 
             with pytest.raises(BgmUrlUnavailableError):
-                asyncio.run(service.validate_and_download_url("sess", "https://example.com/a.mp3"))
+                asyncio.run(service.validate_and_download_url("user-id", "https://example.com/a.mp3"))
 
             _, kwargs = mock_cls.call_args
             assert kwargs.get("trust_env") is False

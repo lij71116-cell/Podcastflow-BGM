@@ -1,0 +1,34 @@
+:root {
+  /* Stitch V2 design tokens — 对齐 docs/prototypes/v2 */
+  --primary: #002720;
+  --primary-container: #163d35;
+  --primary-hover: #1e5248;
+  --primary-soft: rgba(22, 61, 53, 0.08);
+  --secondary: #b32b00;
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --surface-elevated: #fafaf8;
+  --surface-container-low: #f5f4f0;
+  --text: #1b1c1a;
+  --text-secondary: #6b6b6b;
+  --text-tertiary: #9ca3af;
+  --border: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --accent: #40655c;
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  --player-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+  --content-max: 960px;
+  --library-max: 1280px;
+  --header-h: 60px;
+  --player-h: 76px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --player-h: 88px;
+  }
+}

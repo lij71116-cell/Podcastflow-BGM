@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button, Slider, Typography } from 'antd'
-import { CaretRightOutlined, PauseOutlined } from '@ant-design/icons'
+import { Button, Slider } from 'antd'
+import { CaretRightOutlined, PauseOutlined, SoundOutlined } from '@ant-design/icons'
 import './MixPreviewPlayer.css'
 
 interface MixPreviewPlayerProps {
@@ -13,6 +13,8 @@ interface MixPreviewPlayerProps {
   bgmVolume: number
   bgmPlaybackRate: number
   bgmLoop: boolean
+  masterVolume: number
+  onMasterVolumeChange: (value: number) => void
   playToken: number
   onError?: (message: string) => void
 }
@@ -47,6 +49,8 @@ export function MixPreviewPlayer({
   bgmVolume,
   bgmPlaybackRate,
   bgmLoop,
+  masterVolume,
+  onMasterVolumeChange,
   playToken,
   onError,
 }: MixPreviewPlayerProps) {
@@ -84,17 +88,15 @@ export function MixPreviewPlayer({
 
   useEffect(() => {
     const podcast = podcastRef.current
-    if (podcast) {
-      podcast.volume = Math.min(1, Math.max(0, podcastVolume / 100))
-    }
-  }, [podcastVolume])
-
-  useEffect(() => {
     const bgm = bgmRef.current
-    if (bgm) {
-      bgm.volume = Math.min(1, Math.max(0, bgmVolume / 100))
+    const masterScale = Math.min(1, Math.max(0, masterVolume / 100))
+    if (podcast) {
+      podcast.volume = Math.min(1, Math.max(0, (podcastVolume / 100) * masterScale))
     }
-  }, [bgmVolume])
+    if (bgm) {
+      bgm.volume = Math.min(1, Math.max(0, (bgmVolume / 100) * masterScale))
+    }
+  }, [podcastVolume, bgmVolume, masterVolume])
 
   useEffect(() => {
     const podcast = podcastRef.current
@@ -221,9 +223,6 @@ export function MixPreviewPlayer({
 
   return (
     <div className="mix-preview-player">
-      <Typography.Text type="secondary" className="mix-preview-player-hint">
-        播客与 BGM 双轨试听；音量与倍速请在上方混音配置中调整
-      </Typography.Text>
       <audio
         key={`podcast-${podcastId}-${playToken}`}
         ref={podcastRef}
@@ -240,14 +239,34 @@ export function MixPreviewPlayer({
         style={{ display: 'none' }}
         aria-hidden
       />
-      <div className="mix-preview-player-controls">
-        <Button
-          type="primary"
-          shape="circle"
-          icon={playing ? <PauseOutlined /> : <CaretRightOutlined />}
-          onClick={handleToggle}
-          aria-label={playing ? '暂停试听' : '播放试听'}
-        />
+      <div className="mix-preview-player-head">
+        <div className="mix-preview-player-head-left">
+          <Button
+            type="primary"
+            shape="circle"
+            className="mix-preview-player-play-btn"
+            icon={playing ? <PauseOutlined /> : <CaretRightOutlined />}
+            onClick={handleToggle}
+            aria-label={playing ? '暂停试听' : '播放试听'}
+          />
+          <div className="mix-preview-player-meta">
+            <p className="mix-preview-player-title">试听播放中</p>
+            <p className="mix-preview-player-subtitle">完整混音试听 · 音量与倍速可在左侧调整</p>
+          </div>
+        </div>
+        <span className="mix-preview-player-time">
+          {formatTime(progress)} / {formatTime(sliderMax)}
+        </span>
+      </div>
+      <div className={`preview-wave-bars${playing ? '' : ' paused'}`} aria-hidden>
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="preview-controls-row">
+        <span className="mix-preview-control-label">进度</span>
         <Slider
           className="mix-preview-player-progress"
           min={0}
@@ -256,9 +275,18 @@ export function MixPreviewPlayer({
           onChange={handleSeek}
           tooltip={{ formatter: (v) => formatTime(v ?? 0) }}
         />
-        <span className="mix-preview-player-time">
-          {formatTime(progress)} / {formatTime(sliderMax)}
-        </span>
+      </div>
+      <div className="preview-controls-row">
+        <SoundOutlined className="mix-preview-volume-icon" aria-hidden />
+        <Slider
+          className="mix-preview-player-volume"
+          min={0}
+          max={100}
+          value={masterVolume}
+          onChange={onMasterVolumeChange}
+          tooltip={{ formatter: (v) => `${v ?? 0}%` }}
+        />
+        <span className="mix-preview-control-value">{masterVolume}%</span>
       </div>
     </div>
   )

@@ -9,6 +9,8 @@ class MixConfigDTO(BaseModel):
     bgm_volume: float = Field(..., ge=0.0, le=2.0)
     bgm_playback_rate: float = Field(default=1.0, ge=0.6, le=2.0)
     bgm_loop: bool
+    fade_in: int = Field(default=0, ge=0, le=30)
+    fade_out: int = Field(default=0, ge=0, le=30)
 
 
 class CreateMixedAudioRequest(BaseModel):
@@ -24,6 +26,7 @@ class PodcastBriefResponse(BaseModel):
     podcast_name: str
     cover_url: str
     source_url: str
+    description: str = ""
 
 
 class BgmBriefResponse(BaseModel):
@@ -31,6 +34,7 @@ class BgmBriefResponse(BaseModel):
     title: str
     source_type: str
     duration: int
+    cover_url: str = ""
 
 
 class MixedAudioAssetResponse(BaseModel):
@@ -66,6 +70,22 @@ class CreateMixedAudioResponse(BaseModel):
 class MixedAudioListResponse(BaseModel):
     items: list[MixedAudioAssetResponse]
     total: int
+    page: int = 1
+    page_size: int = 10
+
+
+class BatchDeleteMixedAudiosRequest(BaseModel):
+    ids: list[str] = Field(..., min_length=1)
+
+
+class BatchDeleteMixedAudiosResponse(BaseModel):
+    deleted_count: int
+    deleted_ids: list[str]
+
+
+class RegenerateMixedAudioRequest(BaseModel):
+    mix_config: MixConfigDTO
+    bgm_id: str | None = Field(default=None, min_length=1)
 
 
 class DeleteMixedAudioResponse(BaseModel):
@@ -78,7 +98,11 @@ class PreviewMixRequest(BaseModel):
     bgm_source_id: str = Field(..., min_length=1)
     mix_config: MixConfigDTO
     start_sec: int = Field(default=0, ge=0)
-    duration_sec: int = Field(default=30, ge=5, le=60)
+    duration_sec: int | None = Field(
+        default=None,
+        ge=5,
+        description="试听时长（秒）；省略或为 null 时使用播客剩余全长",
+    )
 
 
 class PreviewMixResponse(BaseModel):

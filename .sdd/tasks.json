@@ -2,6 +2,7 @@
   "project": "Podcast Flow",
   "project_type": "web",
   "created": "2026-06-25",
+  "v2_created": "2026-06-29",
   "source_files": {
     "prd": "docs/PRD.md",
     "plan": "docs/Plan.md",
@@ -39,6 +40,14 @@
       "tester_access_required": "读写本地 db 文件",
       "fallback_allowed": false,
       "status": "confirmed"
+    },
+    {
+      "name": "邮件发送（Resend/SMTP）",
+      "required": false,
+      "config_keys": ["RESEND_API_KEY", "MAIL_FROM", "FRONTEND_URL"],
+      "tester_access_required": "V2.0 不实现 forgot-password，无需配置",
+      "fallback_allowed": true,
+      "status": "not_applicable"
     }
   ],
   "tasks": [
@@ -638,6 +647,517 @@
       "retry_count": 0,
       "blocked": false,
       "notes": "全链路 E2E 用户门禁通过；试听区改为自定义播放器（无原生三点菜单/下载）；docs/startup.md 已交付。",
+      "user_gate": true
+    },
+    {
+      "id": "T-015",
+      "title": "V2 Design Tokens + AppShell/顶栏 Mock",
+      "type": "frontend",
+      "description": "引入 V2 Design Tokens（CSS 变量或 theme config，对齐 ui-design-spec.md）；重构 AppShell/AppHeader：Logo、Nav（创建/音频库）、未登录态登录注册入口、登录态圆形头像+用户名下拉占位；配置 /auth 路由骨架；Mock 登录态切换。布局对齐 docs/prototypes/v2/ 顶栏与全局背景。",
+      "source_feature": "B-01 / B-03 / B-05 / F20",
+      "acceptanceCriteria": [
+        "用户打开任意 V2 页面，看到墨绿主色、暖白背景与 Noto Sans SC 字体，视觉气质与 v2 原型一致",
+        "未登录时顶栏右侧显示「登录」「注册」入口",
+        "Mock 登录态下顶栏显示用户名首字圆形头像，点击可展开修改密码/退出菜单（Mock 动作）",
+        "顶栏「创建」「我的音频库」导航可切换路由"
+      ],
+      "technicalChecks": [
+        "npm run type-check 通过",
+        "npm run lint 通过",
+        "npm run build 通过",
+        "Design Tokens 与 .sdd/tmp/ui-design-spec.md 一致",
+        "1440×900 与 390×844 视口顶栏无溢出"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-014"],
+      "priority": 15,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "type-check/lint/build 通过。用户门禁通过（2026-06-29）。",
+      "user_gate": true
+    },
+    {
+      "id": "T-016",
+      "title": "P-Auth 登录/注册/忘密页 Mock",
+      "type": "frontend",
+      "description": "实现 /auth 页：桌面左 40% 品牌区 + 右表单（5A）；注册（用户名/邮箱/密码/确认）；登录 Segmented（用户名+密码 | 邮箱+密码）；切换登录/注册；**V2.0 不展示忘记密码入口**。Mock 成功后跳转首页。对齐 docs/prototypes/v2/auth.html（隐藏忘密链接）。",
+      "source_feature": "A-01 / B-04 / F16",
+      "acceptanceCriteria": [
+        "用户访问 /auth 看到品牌 slogan 与注册/登录表单，布局与 v2/auth.html 一致",
+        "用户可切换「用户名+密码」与「邮箱+密码」两种登录模式",
+        "用户填写注册表单并提交后（Mock），页面提示成功并跳转创建页"
+      ],
+      "technicalChecks": [
+        "npm run type-check/lint/build 通过",
+        "Mock 表单校验与 api-contracts.md Auth 字段一致",
+        "VITE_USE_MOCK=true 时不请求真实 /api/auth/*"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-015"],
+      "priority": 16,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "Auth Mock 完整；用户门禁通过（2026-06-29）。",
+      "user_gate": true
+    },
+    {
+      "id": "T-017",
+      "title": "P01 V2 三 Tab 创建流程 Mock",
+      "type": "frontend",
+      "description": "重构 CreatePage 为 3 Tab 事件轴（链接上传 / 混音配置 / 生成结果）；Tab1 小宇宙+BGM 左右分栏；Tab2 播客/BGM/试听三模块+淡入淡出 Slider；Tab3 摘要/进度/成功引导；顶栏横向 1→2→3 进度轴可回看已完成步骤。对齐 docs/prototypes/v2/index.html。",
+      "source_feature": "B-01 / B-03 / F21 / D-01(Mock UI)",
+      "acceptanceCriteria": [
+        "用户在创建页看到横向三步事件轴，可在已完成步骤间切换回看",
+        "Tab1 用户可 Mock 解析播客并添加 BGM（本地上传/链接）",
+        "Tab2 用户可调节音量、循环与淡入淡出秒数，并 Mock 试听",
+        "Tab3 用户可 Mock 生成进度与成功后的播放/详情/去音频库引导"
+      ],
+      "technicalChecks": [
+        "npm run type-check/lint/build 通过",
+        "Mock MixConfig 含 fade_in/fade_out 字段",
+        "移动视口 Tab 内容单列堆叠无横向溢出"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-016"],
+      "priority": 17,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "pending",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "CreateEventAxis 三步事件轴 + Tab1/2/3 分步内容；含淡入淡出 UI。type-check/lint/build 通过。待用户门禁。",
+      "user_gate": true
+    },
+    {
+      "id": "T-018",
+      "title": "P02 V2 音频库 Mock（分页/搜索/批量删）",
+      "type": "frontend",
+      "description": "重构 LibraryPage：双列大卡片（桌面）/单列（移动）；工具栏搜索+日期；底部分页器；批量管理模式（checkbox + 底栏删除 N 项）。Mock 数据支持分页 total/page。对齐 docs/prototypes/v2/library.html。",
+      "source_feature": "B-01 / C-03 / C-06 / F25 / F26",
+      "acceptanceCriteria": [
+        "用户在音频库看到 V2 大卡片布局，最新条目在前",
+        "用户可使用搜索框和日期筛选 Mock 列表",
+        "用户切换分页器可看到不同页 Mock 数据",
+        "用户进入批量模式勾选多项并确认后，选中卡片从列表消失"
+      ],
+      "technicalChecks": [
+        "npm run type-check/lint/build 通过",
+        "Mock 列表响应含 page/page_size/total 字段"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-017"],
+      "priority": 18,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "pending",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "V2 大卡片网格 + 工具栏搜索/日期 + 居中分页器 + 批量管理模式（checkbox + 底栏删除）。Mock 列表含 page/page_size/total；真实 API 走 client fallback。type-check/lint/build 通过。待统一前端验收。",
+      "user_gate": true
+    },
+    {
+      "id": "T-019",
+      "title": "P03 V2 详情 + 重新生成 Mock",
+      "type": "frontend",
+      "description": "重构 DetailPage：全宽模糊封面 Hero；内嵌播放器；BGM/混音只读（含淡入淡出）；折叠「重新生成」面板（预填原配置+覆盖合成按钮）；删除。对齐 docs/prototypes/v2/detail.html。",
+      "source_feature": "B-01 / D-02 / F29",
+      "acceptanceCriteria": [
+        "用户进入详情页看到模糊封面 Hero 与大封面标题区",
+        "用户看到混音参数只读展示，包含淡入淡出秒数",
+        "用户展开「重新生成」面板可修改 Mock 配置并触发 Mock 覆盖合成进度",
+        "用户删除资产后跳转音频库"
+      ],
+      "technicalChecks": [
+        "npm run type-check/lint/build 通过",
+        "详情 Mock 无下载按钮"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-018"],
+      "priority": 19,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "pending",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "DetailPage V2 对齐 detail.html：Hero/单集介绍/背景音轨/混音只读/重新生成折叠面板+Mock 进度/删除。复用 prototype-chrome.css。type-check/lint/build 通过。待统一前端验收。",
+      "user_gate": true
+    },
+    {
+      "id": "T-020",
+      "title": "G01 V2 播放器 + 移动 H5 响应式 Mock",
+      "type": "frontend",
+      "description": "升级 GlobalPlayerBar：封面 accent 进度条、移动增高触控区、续播进度示意；全站响应式断点 <1024px 单列布局；PWA 引导条 UI（Mock 关闭）。完成 V2 前端 Mock 阶段。",
+      "source_feature": "B-02 / B-06(UI) / C-04(Mock) / F22 / F24",
+      "acceptanceCriteria": [
+        "用户在 P01/P02/P03 触发播放后，底部 V2 播放器样式与 v2 原型一致",
+        "用户在 390px 宽度下可完成创建、浏览库、播放，无横向滚动条",
+        "移动视口底部出现 PWA 引导条，用户可关闭",
+        "Mock 状态下播放器展示「续播进度」示意"
+      ],
+      "technicalChecks": [
+        "npm run type-check/lint/build 通过",
+        "playerStore 跨路由连续播放仍有效",
+        "断点 1024px 行为与 ui-design-spec.md §5 一致"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-019"],
+      "priority": 20,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "pending",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "GlobalPlayerBar 对齐 prototype-chrome（accent 进度条/圆形播放钮/移动双行布局）；PwaInstallBar <1024px；Mock 续播 12% + localStorage；type-check/lint/build 通过。V2 Mock 阶段收官，待统一验收。",
+      "user_gate": true
+    },
+    {
+      "id": "T-021",
+      "title": "User 模型 + JWT 鉴权 + 注册登录 API",
+      "type": "backend",
+      "description": "新增 users 表；实现 POST /api/auth/register、login、logout、GET /api/auth/me；JWT HttpOnly Cookie（podcast_flow_token）；密码 bcrypt；username/email 唯一校验。更新 backend/.env.example 增加 JWT_* 字段。",
+      "source_feature": "A-01 / A-02 / F16 / F17 / F18",
+      "acceptanceCriteria": [
+        "用户可通过 API 注册并立即获得登录态 Cookie",
+        "用户可使用用户名+密码或邮箱+密码登录",
+        "用户登出后 /api/auth/me 返回 401",
+        "重复用户名或邮箱注册返回明确错误码"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含 auth 测试）",
+        "$PY -m ruff check backend/src backend/tests 通过",
+        "$PY -m mypy backend/src backend/tests 通过",
+        "JWT_SECRET 从 .env 读取，无硬编码",
+        "响应格式 {code,message,data}"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": ["SQLite"],
+      "dependencies": ["T-020"],
+      "priority": 21,
+      "rules_files": ["dev-standards/backend-dev.md", "dev-standards/backend-layers.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "users 表 + POST register/login/logout + GET me；JWT HttpOnly Cookie podcast_flow_token；bcrypt 密码；pytest 70 passed；ruff 通过。",
+      "user_gate": false
+    },
+    {
+      "id": "T-022",
+      "title": "业务表 user_id 迁移 + Auth 中间件",
+      "type": "backend",
+      "description": "PodcastSource/BgmSource/MixedAudioAsset/MixTask 等表增加 user_id；迁移脚本；auth 中间件替换 V1 session 隔离；所有 /api/*（除 /health 与 /api/auth/register|login|forgot|reset）需登录。V1 匿名数据不合并。",
+      "source_feature": "A-03 / A-04 / A-05 / F18",
+      "acceptanceCriteria": [
+        "登录用户创建的资产仅该用户可见",
+        "未登录访问 GET /api/mixed-audios 返回 401",
+        "用户 A 无法访问用户 B 的资产详情（403）",
+        "新注册用户音频库为空（不继承匿名 Session 数据）"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过（含 user 隔离测试）",
+        "迁移脚本可重复执行或文档说明 init 流程",
+        "CORS 仍支持 withCredentials"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": ["SQLite"],
+      "dependencies": ["T-021"],
+      "priority": 22,
+      "rules_files": ["dev-standards/backend-dev.md", "dev-standards/backend-layers.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "user_id 列 + AuthMiddleware 替换 Session；业务 API 须 JWT；跨用户 403；匿名 V1 数据不合并。pytest 70 passed；migrate_v2_user_id.py 已交付。",
+      "user_gate": false
+    },
+    {
+      "id": "T-023",
+      "title": "修改密码 API",
+      "type": "backend",
+      "description": "实现 POST /api/auth/change-password（需 current_password + new_password）；V2.0 不实现 forgot-password / reset-password / 邮件服务。",
+      "source_feature": "A-07 / F19",
+      "acceptanceCriteria": [
+        "登录用户凭当前密码可成功修改密码",
+        "当前密码错误时返回明确错误",
+        "修改密码后旧密码无法登录、新密码可登录"
+      ],
+      "technicalChecks": [
+        "$PY -m pytest backend/tests 通过",
+        "无邮件相关 env 依赖"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-022"],
+      "priority": 23,
+      "rules_files": ["dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "POST /api/auth/change-password；当前密码错 40102；确认不一致 40012；成功后刷新 JWT Cookie。pytest 74 passed。",
+      "user_gate": false
+    },
+    {
+      "id": "T-024",
+      "title": "Auth 前端真实 API + 路由守卫",
+      "type": "integration",
+      "description": "authService 对接真实 /api/auth/*；VITE_USE_MOCK=false；ProtectedRoute 守卫 / /library /detail；401 跳转 /auth；顶栏账号区接真实 user；登出清态。",
+      "source_feature": "A-01 / A-02 / B-05 / F16 / F17",
+      "acceptanceCriteria": [
+        "用户注册成功后自动登录并进入创建页",
+        "未登录用户访问 /library 被重定向到 /auth",
+        "用户登出后无法访问受保护页面",
+        "顶栏显示真实用户名与登出/修改密码入口"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false 时 auth 请求走真实后端",
+        "vite.config.ts proxy /api 已配置",
+        "npm run type-check/lint/build 通过",
+        "$PY -m pytest backend/tests 通过"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["AuthPage", "AppShell"],
+        "services": ["authService"],
+        "realApiEndpoints": ["POST /api/auth/register", "POST /api/auth/login", "POST /api/auth/logout", "GET /api/auth/me"],
+        "mockExitCriteria": ["Auth 页不再使用 Mock 登录态"]
+      },
+      "externalServices": [],
+      "dependencies": ["T-023"],
+      "priority": 24,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "authService + authStore + ProtectedRoute/GuestAuthRoute + ChangePasswordModal + 401 拦截。Mock 模式仍跳过守卫；VITE_USE_MOCK=false 时走真实 /api/auth/*。type-check/lint/build + pytest 通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-025",
+      "title": "V2 创建页真实 API + 淡入淡出合成",
+      "type": "integration",
+      "description": "CreatePage 3 Tab 接真实 parse/bgm/mixed-audios；MixConfig 传 fade_in/fade_out；Mix Worker FFmpeg afade 滤镜；保持 V2 UI。",
+      "source_feature": "F21 / D-01 / B-01",
+      "acceptanceCriteria": [
+        "登录用户在 V2 创建页完成解析、BGM、混音（含淡入淡出）并成功生成",
+        "合成产物可播放，详情页可见淡入淡出参数",
+        "三 Tab 流程与 v2 原型交互一致"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false 创建链路走真实 API",
+        "$PY -m pytest backend/tests 通过（含 fade filter 测试）",
+        "FFmpeg 不可用时 fallback 标注"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["CreatePage"],
+        "services": ["podcastService", "bgmService", "mixedAudioService"],
+        "realApiEndpoints": ["POST /api/podcasts/parse", "POST /api/bgm/upload", "POST /api/bgm/validate-url", "POST /api/mixed-audios"],
+        "mockExitCriteria": ["CreatePage V2 不再走 Mock"]
+      },
+      "externalServices": ["FFmpeg + ffprobe", "小宇宙公开页面"],
+      "dependencies": ["T-024"],
+      "priority": 25,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "MixConfig fade_in/fade_out；mix_ffmpeg afade 滤镜；CreatePage 真实 parse/bgm/mixed-audios + 2s 轮询；pytest 78 passed；type-check/lint/build 通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-026",
+      "title": "列表分页/筛选 + 批量删除闭环",
+      "type": "integration",
+      "description": "GET /api/mixed-audios 支持 page/page_size/q/created_date；DELETE /api/mixed-audios/batch；LibraryPage V2 接真实 API。",
+      "source_feature": "C-03 / C-06 / F25 / F26",
+      "acceptanceCriteria": [
+        "用户在音频库看到分页列表，底部分页器可切换页码",
+        "用户搜索标题或选择日期后列表正确过滤",
+        "用户批量选择并删除多项后，列表与总数更新",
+        "删除正在播放项时全局播放器停止"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false",
+        "$PY -m pytest backend/tests 通过",
+        "npm run type-check/lint/build 通过"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["LibraryPage"],
+        "services": ["mixedAudioService"],
+        "realApiEndpoints": ["GET /api/mixed-audios", "DELETE /api/mixed-audios/batch"],
+        "mockExitCriteria": ["LibraryPage 分页/批量删走真实 API"]
+      },
+      "externalServices": ["SQLite"],
+      "dependencies": ["T-025"],
+      "priority": 26,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "GET /api/mixed-audios 支持 page/page_size/q/created_date|created_from|created_to；DELETE /api/mixed-audios/batch；LibraryPage 已接 mixedAudioService；pytest 78 passed。",
+      "user_gate": true
+    },
+    {
+      "id": "T-027",
+      "title": "播放进度记忆闭环",
+      "type": "integration",
+      "description": "playback_progress 表；PUT/GET /api/mixed-audios/{id}/playback-progress；GlobalPlayerBar 与 InlinePlayer 分别上报/恢复 global 与 inline 进度；跨设备同步。",
+      "source_feature": "C-04 / F27",
+      "acceptanceCriteria": [
+        "用户在全局播放器听到一半后关闭，再次播放同一资产从上次进度继续",
+        "用户在详情内嵌播放器与全局播放器分别记忆不同进度",
+        "用户换设备登录同一账号，可看到相同续播进度"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false",
+        "$PY -m pytest backend/tests 通过"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["LibraryPage", "DetailPage", "GlobalPlayerBar"],
+        "services": ["mixedAudioService", "playerStore"],
+        "realApiEndpoints": ["PUT /api/mixed-audios/{id}/playback-progress", "GET /api/mixed-audios/{id}/playback-progress"],
+        "mockExitCriteria": ["播放器进度走真实 API"]
+      },
+      "externalServices": ["SQLite"],
+      "dependencies": ["T-026"],
+      "priority": 27,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "playback_progress 表 + PUT/GET API；GlobalPlayerBar/InlinePlayer 分别上报 global/inline 进度；跨设备同账号同步；pytest 82 passed；type-check 通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-028",
+      "title": "详情页重新生成（覆盖）闭环",
+      "type": "integration",
+      "description": "POST /api/mixed-audios/{id}/regenerate；DetailPage V2 Hero + 重新生成面板接真实 API；覆盖原文件不新建 ID；合成中禁用重复提交。",
+      "source_feature": "D-02 / F29",
+      "acceptanceCriteria": [
+        "用户在详情页修改混音配置并点击重新合成，原资产 ID 不变",
+        "重新合成成功后播放内容为新版音频",
+        "合成进行中页面展示进度且不可重复提交"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false",
+        "$PY -m pytest backend/tests 通过"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["DetailPage"],
+        "services": ["mixedAudioService"],
+        "realApiEndpoints": ["POST /api/mixed-audios/{id}/regenerate"],
+        "mockExitCriteria": ["重新生成走真实 API"]
+      },
+      "externalServices": ["FFmpeg + ffprobe"],
+      "dependencies": ["T-027"],
+      "priority": 28,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "POST /api/mixed-audios/{id}/regenerate 覆盖同 ID；合成中 40901；DetailPage 真实 API + 2s 轮询 + 合成中禁用表单；pytest 86 passed；type-check 通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-029",
+      "title": "PWA manifest + Service Worker",
+      "type": "frontend",
+      "description": "添加 manifest.json（theme_color #1A3C34、icons）；注册轻量 SW 缓存静态资源；连接 ui-design-spec 移动引导条；vercel.json 如需更新。",
+      "source_feature": "B-06 / F24",
+      "acceptanceCriteria": [
+        "用户在 Chrome 移动仿真可看到「添加到主屏幕」或 PWA 安装提示",
+        "安装后应用名与主题色正确",
+        "PWA 引导条在移动视口可按原型展示与关闭"
+      ],
+      "technicalChecks": [
+        "npm run build 通过",
+        "manifest 字段与 ui-design-spec.md §6 一致"
+      ],
+      "frontendIntegration": { "required": false, "pages": [], "services": [], "realApiEndpoints": [], "mockExitCriteria": [] },
+      "externalServices": [],
+      "dependencies": ["T-028"],
+      "priority": 29,
+      "rules_files": ["dev-standards/frontend.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-degraded",
+      "tester_id": "orchestrator-degraded",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "manifest.webmanifest(theme_color #1A3C34) + icons(192/512/svg) + sw.js 静态缓存；index.html 链接 manifest；生产环境注册 SW；PwaInstallBar 已安装 standalone 时隐藏；vercel.json 补充 SW/manifest headers；npm run build 通过。",
+      "user_gate": true
+    },
+    {
+      "id": "T-030",
+      "title": "V2 E2E 全链路回归",
+      "type": "integration",
+      "description": "V2 全链路：注册/登录 → V2 创建（fade）→ 分页库 → 详情 regenerate → 双端播放进度 → 批量删 → PWA 冒烟；更新 docs/startup.md；VITE_USE_MOCK=false。",
+      "source_feature": "V2 全链路 / M8",
+      "acceptanceCriteria": [
+        "用户注册登录后可在另一浏览器同账号看到相同音频库（多端同步）",
+        "用户完成创建、播放、续播、重新生成、批量删除全链路无阻塞",
+        "全站无下载按钮；未登录无法访问核心页",
+        "移动视口 390px 核心流程可操作"
+      ],
+      "technicalChecks": [
+        "VITE_USE_MOCK=false 全站真实 API",
+        "npm run type-check/lint/build 通过",
+        "$PY -m pytest backend/tests 通过",
+        "$PY -m ruff check backend/src backend/tests 与 mypy 通过",
+        "docs/startup.md 已更新 V2 启动说明"
+      ],
+      "frontendIntegration": {
+        "required": true,
+        "pages": ["AuthPage", "CreatePage", "LibraryPage", "DetailPage"],
+        "services": ["authService", "podcastService", "bgmService", "mixedAudioService"],
+        "realApiEndpoints": ["全部 V2 /api/*"],
+        "mockExitCriteria": ["V2 无任何 Mock 分支残留"]
+      },
+      "externalServices": ["FFmpeg + ffprobe", "小宇宙公开页面", "本地文件存储", "SQLite"],
+      "dependencies": ["T-029"],
+      "priority": 30,
+      "rules_files": ["dev-standards/frontend.md", "dev-standards/backend-dev.md"],
+      "status": "passed",
+      "developer_id": "orchestrator-cursor",
+      "tester_id": "orchestrator-cursor",
+      "retry_count": 0,
+      "blocked": false,
+      "notes": "T-030 全链路回归完成：pytest 86 passed；ruff/mypy/type-check/lint/build 通过；startup.md + Plan M8 已更新。用户门禁已通过（双浏览器同步、390px 全流程、PWA 后台播放）。V2 正式收官。",
       "user_gate": true
     }
   ]

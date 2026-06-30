@@ -19,4 +19,5 @@ class BgmSourceResponse(BaseModel):
     duration: int
     format: str
     status: str
+    cover_url: str = ""
     created_at: str

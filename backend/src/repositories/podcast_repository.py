@@ -2,6 +2,7 @@
 
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import PodcastSource
@@ -14,12 +15,13 @@ class PodcastRepository:
 
     async def create_from_parsed(
         self,
-        session_id: str,
+        user_id: str,
         parsed: ParsedEpisode,
     ) -> PodcastSource:
         entity = PodcastSource(
             id=str(uuid.uuid4()),
-            session_id=session_id,
+            user_id=user_id,
+            session_id=None,
             source_type="xiaoyuzhou_episode",
             source_url=parsed.source_url,
             episode_id=parsed.episode_id,
@@ -35,13 +37,19 @@ class PodcastRepository:
         await self._db.refresh(entity)
         return entity
 
-    async def get_by_id(self, session_id: str, podcast_id: str) -> PodcastSource | None:
-        from sqlalchemy import select
+    async def update_cover_url(self, podcast_id: str, cover_url: str) -> None:
+        result = await self._db.execute(
+            select(PodcastSource).where(PodcastSource.id == podcast_id)
+        )
+        entity = result.scalar_one()
+        entity.cover_url = cover_url
+        await self._db.flush()
 
+    async def get_by_id(self, user_id: str, podcast_id: str) -> PodcastSource | None:
         result = await self._db.execute(
             select(PodcastSource).where(
                 PodcastSource.id == podcast_id,
-                PodcastSource.session_id == session_id,
+                PodcastSource.user_id == user_id,
             )
         )
         return result.scalar_one_or_none()

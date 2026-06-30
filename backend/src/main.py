@@ -7,15 +7,15 @@ from pycore.api.server import APIConfig, APIServer
 from pycore.core.logger import Logger, LoggerConfig, LogLevel, get_logger
 from starlette.routing import Route
 
+from src.api.routes.auth import router as auth_router
 from src.api.routes.bgm import router as bgm_router
 from src.api.routes.health import health_check
 from src.api.routes.mixed_audios import router as mixed_audios_router
 from src.api.routes.podcasts import router as podcasts_router
-from src.api.routes.session import router as session_router
 from src.core.config import get_settings, load_settings
 from src.core.storage import ensure_storage_dirs
 from src.db.session import close_db, init_db, init_engine
-from src.middleware.session import SessionMiddleware
+from src.middleware.auth import AuthMiddleware
 from src.services.mix_worker import start_mix_worker
 
 Logger.configure(
@@ -70,9 +70,9 @@ def _build_app() -> FastAPI:
         if not (isinstance(r, Route) and r.path == "/health")
     ]
 
-    application.add_middleware(SessionMiddleware)
+    application.add_middleware(AuthMiddleware)
     application.add_api_route("/health", health_check, methods=["GET"], tags=["health"])
-    application.include_router(session_router)
+    application.include_router(auth_router)
     application.include_router(podcasts_router)
     application.include_router(bgm_router)
     application.include_router(mixed_audios_router)

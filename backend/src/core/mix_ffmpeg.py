@@ -17,6 +17,26 @@ def _track_filter(volume: float, playback_rate: float) -> str:
     return f"atempo={speed},volume={vol}"
 
 
+def _bgm_filter_chain(
+    volume: float,
+    playback_rate: float,
+    *,
+    fade_in: int,
+    fade_out: int,
+    duration_sec: int,
+) -> str:
+    """BGM 轨滤镜链：倍速/音量 + 可选 afade 淡入淡出。"""
+    parts = [_track_filter(volume, playback_rate)]
+    safe_duration = max(1, duration_sec)
+    if fade_in > 0:
+        parts.append(f"afade=t=in:st=0:d={fade_in}")
+    if fade_out > 0:
+        fade_out_sec = min(fade_out, safe_duration)
+        start = max(0, safe_duration - fade_out_sec)
+        parts.append(f"afade=t=out:st={start}:d={fade_out_sec}")
+    return ",".join(parts)
+
+
 def build_mix_command(
     ffmpeg_path: str,
     podcast_input: str,
@@ -30,11 +50,14 @@ def build_mix_command(
     start_sec: int = 0,
     podcast_playback_rate: float = 1.0,
     bgm_playback_rate: float = 1.0,
+    fade_in: int = 0,
+    fade_out: int = 0,
 ) -> list[str]:
     """构建 FFmpeg 混音命令（播客 + BGM → mp3）。"""
+    safe_duration = max(1, duration_sec)
     filter_complex = (
         f"[0:a]{_track_filter(podcast_volume, podcast_playback_rate)}[p];"
-        f"[1:a]{_track_filter(bgm_volume, bgm_playback_rate)}[b];"
+        f"[1:a]{_bgm_filter_chain(bgm_volume, bgm_playback_rate, fade_in=fade_in, fade_out=fade_out, duration_sec=safe_duration)}[b];"
         f"[p][b]amix=inputs=2:duration=first:dropout_transition=0[out]"
     )
     args: list[str] = [
@@ -55,7 +78,7 @@ def build_mix_command(
             "-map",
             "[out]",
             "-t",
-            str(max(1, duration_sec)),
+            str(safe_duration),
             "-c:a",
             "libmp3lame",
             "-q:a",

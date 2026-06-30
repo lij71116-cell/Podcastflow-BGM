@@ -15,7 +15,7 @@ from src.db.session import close_db, init_db, init_engine
 
 def _ensure_storage_dirs(storage_root: str) -> None:
     root = Path(storage_root)
-    for sub in ("bgm", "mixed"):
+    for sub in ("bgm", "mixed", "covers"):
         (root / sub).mkdir(parents=True, exist_ok=True)
     print(f"[init_db] Storage directories ready: {root}")
 

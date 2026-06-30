@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>如何建立可持续的专注习惯 - 组合音频</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#ff5729",
+                    "primary-container": "#163d35",
+                    "inverse-primary": "#a6cfc4",
+                    "inverse-on-surface": "#f2f1ed",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-container": "#512d24",
+                    "surface": "#faf9f5",
+                    "border-strong": "rgba(0, 0, 0, 0.12)",
+                    "text-primary": "#121212",
+                    "surface-tint": "#40655c",
+                    "outline-variant": "#c0c8c5",
+                    "primary": "#002720",
+                    "surface-container-highest": "#e3e2df",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#3c0800",
+                    "outline": "#717976",
+                    "background": "#faf9f5",
+                    "on-tertiary": "#ffffff",
+                    "on-surface-variant": "#414846",
+                    "surface-elevated": "#FAFAF8",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#c79487",
+                    "secondary": "#b32b00",
+                    "on-background": "#1b1c1a",
+                    "border-subtle": "rgba(0, 0, 0, 0.07)",
+                    "on-secondary": "#ffffff",
+                    "text-secondary": "#6B6B6B",
+                    "surface-bright": "#faf9f5",
+                    "surface-dim": "#dbdad6",
+                    "primary-fixed": "#c2ebdf",
+                    "on-tertiary-fixed": "#31130b",
+                    "on-primary-fixed": "#00201a",
+                    "on-primary-container": "#80a89d",
+                    "tertiary": "#381810",
+                    "tertiary-fixed": "#ffdad2",
+                    "surface-container": "#efeeea",
+                    "on-tertiary-fixed-variant": "#643d33",
+                    "text-tertiary": "#9CA3AF",
+                    "surface-container-high": "#e9e8e4",
+                    "on-secondary-container": "#550f00",
+                    "inverse-surface": "#30312e",
+                    "primary-hover": "#1E5248",
+                    "on-primary-fixed-variant": "#284d45",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f5f4f0",
+                    "primary-fixed-dim": "#a6cfc4",
+                    "secondary-fixed-dim": "#ffb4a1",
+                    "on-error-container": "#93000a",
+                    "surface-white": "#FFFFFF",
+                    "on-surface": "#1b1c1a",
+                    "on-secondary-fixed-variant": "#891e00",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#e3e2df",
+                    "tertiary-fixed-dim": "#f1baac",
+                    "secondary-fixed": "#ffdbd2",
+                    "primary-soft": "rgba(22, 61, 53, 0.08)"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit-md": "16px",
+                    "unit-sm": "8px",
+                    "container-max": "1280px",
+                    "unit-xs": "4px",
+                    "unit-lg": "24px",
+                    "gutter": "20px",
+                    "margin-edge": "24px",
+                    "unit-xl": "48px"
+            },
+            "fontFamily": {
+                    "display-lg": [
+                            "DM Sans"
+                    ],
+                    "headline-md": [
+                            "Noto Sans SC"
+                    ],
+                    "body-md": [
+                            "Noto Sans SC"
+                    ],
+                    "mono-num": [
+                            "DM Sans"
+                    ],
+                    "label-sm": [
+                            "DM Sans"
+                    ],
+                    "display-lg-mobile": [
+                            "DM Sans"
+                    ]
+            },
+            "fontSize": {
+                    "display-lg": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "15px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "mono-num": [
+                            "14px",
+                            {
+                                    "lineHeight": "1",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .custom-shadow {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+        .custom-shadow-hover:hover {
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+    </style>
+<link href="assets/prototype-chrome.css?v=20260705" rel="stylesheet"/>
+<style>
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #fff; border: 2px solid #163d35; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: rgba(22, 61, 53, 0.1); border-radius: 4px; }
+        .custom-checkbox { appearance: none; background: #fff; width: 20px; height: 20px; border: 1px solid #717976; border-radius: 4px; display: grid; place-content: center; flex-shrink: 0; cursor: pointer; }
+        .custom-checkbox::before { content: ""; width: 12px; height: 12px; transform: scale(0); transition: 120ms transform ease-in-out; background: #163d35; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+        .custom-checkbox:checked::before { transform: scale(1); }
+        .custom-checkbox:checked { background: #163d35; border-color: #163d35; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body class="bg-surface text-on-surface font-body-md text-body-md antialiased min-h-screen has-player">
+<header class="create-topnav bg-surface/80 backdrop-blur-md sticky top-0 h-[60px] w-full z-40 border-b border-border-subtle shadow-sm hidden md:block">
+<div class="grid grid-cols-[1fr_auto_1fr] items-center px-margin-edge w-full max-w-container-max mx-auto h-full">
+<a class="text-headline-md font-headline-md font-bold text-primary flex items-center gap-1.5 before:content-[''] before:w-2 before:h-2 before:bg-primary before:rounded-full justify-self-start" href="index.html">Podcast Flow</a>
+<nav class="hidden md:flex items-center gap-1 justify-self-center h-full">
+<a class="nav-tab" href="index.html">创建</a>
+<a class="nav-tab nav-tab-active" href="library.html">我的音频库</a>
+</nav>
+<div class="flex items-center justify-end gap-4 justify-self-end">
+<a class="text-label-sm font-label-sm text-text-secondary hover:text-primary transition-colors" href="auth.html">登录</a>
+<button class="text-label-sm font-label-sm bg-primary-container text-white px-4 py-1.5 rounded-full hover:bg-primary-hover transition-colors shadow-sm" type="button">注册</button>
+</div>
+</div>
+</header>
+<!-- Hero Section -->
+<header class="relative w-full overflow-hidden bg-surface-container pt-8 pb-12 px-6">
+<!-- Blurred Cover Gradient Background -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary-fixed-dim/40 via-surface-container to-surface-bright pointer-events-none opacity-80 backdrop-blur-3xl"></div>
+<div class="max-w-[960px] mx-auto relative z-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
+<!-- Large Cover -->
+<div class="w-[120px] h-[120px] shrink-0 rounded-xl bg-primary-container text-on-primary shadow-lg flex items-center justify-center font-display-lg text-[64px] leading-none select-none">
+                专
+            </div>
+<!-- Titles and Meta -->
+<div class="flex flex-col gap-2 text-center md:text-left">
+<h1 class="font-display-lg text-display-lg text-on-surface">如何建立可持续的专注习惯</h1>
+<div class="flex items-center justify-center md:justify-start gap-3 text-text-secondary font-label-sm text-label-sm mt-2">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">podcasts</span> 效率圆桌</span>
+<span>•</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 45:20</span>
+<span>•</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">calendar_today</span> 2023-10-25</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="max-w-[960px] mx-auto px-6 py-8 flex flex-col gap-8">
+<!-- Back Link -->
+<div>
+<a class="inline-flex items-center gap-1 text-primary hover:text-primary-hover font-label-sm text-label-sm transition-colors w-fit group" href="library.html">
+<span class="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                返回我的组合音频库
+            </a>
+</div>
+<!-- 播客单集介绍（来自小宇宙解析） -->
+<section class="detail-podcast-intro bg-surface-container-lowest rounded-xl p-unit-lg custom-shadow custom-shadow-hover transition-all duration-300 border border-border-subtle">
+<div class="detail-podcast-intro-head">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">description</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">单集介绍</h2>
+</div>
+<div class="detail-podcast-intro-meta">
+<span class="detail-podcast-meta-chip"><span class="material-symbols-outlined text-[14px]">podcasts</span>效率圆桌</span>
+<span class="detail-podcast-meta-chip"><span class="material-symbols-outlined text-[14px]">schedule</span>45:20</span>
+<a class="detail-podcast-meta-chip detail-podcast-meta-link" href="https://www.xiaoyuzhoufm.com/episode/example" rel="noopener noreferrer" target="_blank"><span class="material-symbols-outlined text-[14px]">link</span>小宇宙原链接</a>
+</div>
+</div>
+<div class="detail-podcast-desc-wrap">
+<p class="detail-podcast-desc font-body-md text-body-md text-on-surface leading-relaxed" id="podcast-desc">在信息过载的时代，专注力已成为最稀缺的资源之一。本期节目，我们邀请到行为设计专家，从环境搭建、时间块管理、以及「最小专注单元」三个维度，拆解如何建立一套可持续的专注习惯——不是依靠意志力硬撑，而是让专注变成低摩擦的日常默认选项。节目中还会聊到：为什么「多任务处理」是效率幻觉、BGM 与白噪音如何影响深度工作、以及如何用 25 分钟法则过渡到 90 分钟心流块。如果你正在为分心、拖延或「坐不住」而困扰，这期内容或许能给你一套可立即实践的框架。</p>
+</div>
+<button class="detail-podcast-desc-toggle" id="podcast-desc-toggle" type="button">
+<span id="podcast-desc-toggle-label">展开全文</span>
+<span class="material-symbols-outlined text-[18px]" id="podcast-desc-toggle-icon">expand_more</span>
+</button>
+</section>
+<!-- Detail Stack: 背景音轨 → 混音配置 → 重新生成 -->
+<div class="detail-stack">
+<!-- BGM Info Card -->
+<section class="detail-bento-card bg-surface-container-lowest rounded-xl p-unit-lg custom-shadow custom-shadow-hover transition-all duration-300 border border-border-subtle">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary-container">music_note</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">背景音轨</h3>
+</div>
+<div class="detail-bgm-body detail-bgm-body--wide">
+<div class="detail-bgm-hero">
+<div class="detail-bgm-cover">
+<img class="w-full h-full object-cover" alt="" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCc9Z3RrV_1uX6xEIkp5olyWsqwoSsaJX-DGPEYKocYE3TX8_K8djdGzSIC29M8eS-ZTlnnN5uCkbTpUGEKG6Y72vFFom8PK3rKKA3QOGYBXoceDRzMVhYAhDpdWHGzi1y0DGJMjN_ptqgNA2vxq0GFB3EMyl-36JmVB5deCjnLSjBOl7w9oM1WA7gCmrtl567jG6OpDOA0aIL-l_G4eMAZiwuTQ44cGHZsZcMjHg4oaUfjr5mKnZMMXDOSZ9ZnJ7g5X8hE1MVIcU0"/>
+</div>
+<div class="detail-bgm-hero-info">
+<span class="inline-block px-2 py-0.5 bg-[#E8471A] text-white font-label-sm text-[10px] rounded w-fit">BGM</span>
+<h4 class="font-body-md text-body-md font-medium text-on-surface leading-snug">晨间松林 (Morning Pine)</h4>
+<p class="font-label-sm text-label-sm text-text-secondary leading-relaxed">自然白噪音 · 专注氛围</p>
+</div>
+</div>
+<div class="mix-readonly-group detail-bgm-attrs">
+<div class="mix-readonly-group-title">音轨属性</div>
+<div class="mix-readonly-rows detail-bgm-attrs-grid">
+<div class="mix-readonly-row"><dt>来源</dt><dd>本地上传</dd></div>
+<div class="mix-readonly-row"><dt>原始时长</dt><dd>03:00</dd></div>
+<div class="mix-readonly-row"><dt>风格</dt><dd>自然白噪音</dd></div>
+<div class="mix-readonly-row"><dt>循环方式</dt><dd>自动循环铺满</dd></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Mix Config Card (Read-only) -->
+<section class="detail-bento-card bg-surface-container-lowest rounded-xl p-unit-lg custom-shadow custom-shadow-hover transition-all duration-300 border border-border-subtle">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary-container">tune</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">混音配置</h3>
+</div>
+<div class="mix-readonly mix-readonly--wide">
+<div class="mix-readonly-group">
+<div class="mix-readonly-group-title">播客</div>
+<div class="mix-readonly-bar-row">
+<div class="mix-readonly-bar-head"><span>音量</span><span>100%</span></div>
+<div class="mix-readonly-bar-track"><div class="mix-readonly-bar-fill" style="width:100%"></div></div>
+</div>
+<div class="mix-readonly-rows">
+<div class="mix-readonly-row"><dt>倍速</dt><dd>1.0x</dd></div>
+</div>
+</div>
+<div class="mix-readonly-group">
+<div class="mix-readonly-group-title">BGM</div>
+<div class="mix-readonly-bar-row">
+<div class="mix-readonly-bar-head"><span>音量</span><span>15%</span></div>
+<div class="mix-readonly-bar-track"><div class="mix-readonly-bar-fill bgm" style="width:15%"></div></div>
+</div>
+<div class="mix-readonly-rows">
+<div class="mix-readonly-row"><dt>倍速</dt><dd>1.0x</dd></div>
+<div class="mix-readonly-row"><dt>淡入</dt><dd>3 秒</dd></div>
+<div class="mix-readonly-row"><dt>淡出</dt><dd>5 秒</dd></div>
+<div class="mix-readonly-row"><dt>自动循环</dt><dd>开启</dd></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Collapsible "重新生成" -->
+<details class="group bg-surface-container-lowest rounded-xl custom-shadow border border-border-subtle overflow-hidden">
+<summary class="flex justify-between items-center p-unit-lg cursor-pointer select-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary">autorenew</span>
+<span class="font-headline-md text-headline-md text-on-surface">重新生成</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary group-open:rotate-180 transition-transform duration-300">expand_more</span>
+</summary>
+<div class="px-unit-lg pb-unit-lg border-t border-border-subtle pt-4">
+<p class="font-body-md text-body-md text-text-secondary mb-4">修改下方混音配置后，可直接在此重新合成并覆盖当前组合音频。参数默认与创建时的混音配置一致。</p>
+<div class="flex flex-col gap-unit-lg">
+<section class="bg-surface-container-lowest rounded-xl p-unit-lg border border-border-subtle shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+<h2 class="text-headline-md font-headline-md text-primary mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-primary-container" style="font-variation-settings:'FILL' 1">mic</span>播客</h2>
+<div class="space-y-6">
+<div class="flex flex-col gap-2"><div class="flex justify-between items-center"><label class="text-body-md text-on-surface">音量</label><span class="font-mono-num text-primary-container font-bold">100%</span></div><input class="w-full" max="200" min="0" type="range" value="100"/></div>
+<div class="flex flex-col gap-2"><div class="flex justify-between items-center"><label class="text-body-md text-on-surface">倍速</label><span class="font-mono-num text-primary-container font-bold">1.0x</span></div><input class="w-full" max="2.0" min="0.5" step="0.1" type="range" value="1.0"/></div>
+</div>
+</section>
+<section class="bg-surface-container-lowest rounded-xl p-unit-lg border border-border-subtle shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+<div class="flex justify-between items-center mb-6"><h2 class="text-headline-md font-headline-md text-primary flex items-center gap-2"><span class="material-symbols-outlined text-primary-container" style="font-variation-settings:'FILL' 1">music_note</span>背景音乐 (BGM)</h2><span class="bg-secondary text-white px-2 py-1 rounded-full text-label-sm">已选择 1 首</span></div>
+<div class="space-y-8">
+<div class="space-y-6">
+<div class="flex flex-col gap-2"><div class="flex justify-between items-center"><label class="text-body-md text-on-surface">音量</label><span class="font-mono-num text-primary-container font-bold">15%</span></div><input class="w-full" max="100" min="0" type="range" value="15"/></div>
+<div class="flex flex-col gap-2"><div class="flex justify-between items-center"><label class="text-body-md text-on-surface">倍速</label><span class="font-mono-num text-primary-container font-bold">1.0x</span></div><input class="w-full" max="2.0" min="0.5" step="0.1" type="range" value="1.0"/></div>
+</div>
+<hr class="border-border-subtle"/>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 rounded-lg bg-surface border border-border-subtle gap-4 flex-wrap">
+<label class="flex items-center gap-3 cursor-pointer"><input checked class="custom-checkbox" type="checkbox"/><span class="text-body-md text-on-surface">淡入 (Fade In)</span></label>
+<div class="flex items-center gap-3 w-full sm:w-48"><input class="w-full flex-1" max="10" min="1" type="range" value="3"/><span class="font-mono-num text-text-secondary w-8 text-right">3s</span></div>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg bg-surface border border-border-subtle gap-4 flex-wrap">
+<label class="flex items-center gap-3 cursor-pointer"><input checked class="custom-checkbox" type="checkbox"/><span class="text-body-md text-on-surface">淡出 (Fade Out)</span></label>
+<div class="flex items-center gap-3 w-full sm:w-48"><input class="w-full flex-1" max="10" min="1" type="range" value="5"/><span class="font-mono-num text-text-secondary w-8 text-right">5s</span></div>
+</div>
+<div class="flex items-center p-4 rounded-lg bg-surface border border-border-subtle"><label class="flex items-center gap-3 cursor-pointer w-full"><input checked class="custom-checkbox" type="checkbox"/><span class="text-body-md text-on-surface">BGM 自动循环铺满播客</span></label></div>
+</div>
+</div>
+</section>
+</div>
+<div class="mt-6 text-center"><button class="px-8 py-3 bg-primary-container text-white rounded-lg font-bold hover:bg-primary-hover shadow-sm transition-colors" type="button">重新合成（覆盖当前音频）</button></div>
+</div>
+</details>
+</div>
+<!-- Delete Button -->
+<div class="mt-8 mb-12 flex justify-center">
+<button class="text-error bg-error-container/20 hover:bg-error-container/40 px-6 py-3 rounded-lg font-label-sm text-label-sm transition-colors border border-error/20 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+                删除此组合音频
+            </button>
+</div>
+</main>
+<div class="global-player visible" id="globalPlayer">
+<div class="player-info">
+<div class="cover cover-xs" style="background:#2D6A4F">专</div>
+<div class="player-info-text">
+<h4 class="player-title">如何建立可持续的专注习惯</h4>
+<p class="player-podcast">效率圆桌</p>
+</div>
+</div>
+<div class="player-center">
+<button class="play-btn" id="gp-play" type="button"><span class="material-symbols-outlined text-white text-[24px]" id="gp-play-icon" style="font-variation-settings:'FILL' 1">play_arrow</span></button>
+<div class="player-progress"><input id="gp-progress" max="100" min="0" type="range" value="12"/></div>
+<span class="player-time"><span id="gp-current">06:24</span> / <span id="gp-total">45:20</span></span>
+</div>
+<div class="player-right">
+<div class="player-volume">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">volume_up</span>
+<input id="gp-volume" max="100" min="0" type="range" value="80"/>
+</div>
+</div>
+</div>
+<script>
+(function () {
+  const playBtn = document.getElementById('gp-play');
+  const playIcon = document.getElementById('gp-play-icon');
+  const progress = document.getElementById('gp-progress');
+  const current = document.getElementById('gp-current');
+  const desc = document.getElementById('podcast-desc');
+  const descToggle = document.getElementById('podcast-desc-toggle');
+  const descToggleLabel = document.getElementById('podcast-desc-toggle-label');
+  const descToggleIcon = document.getElementById('podcast-desc-toggle-icon');
+  let gpPlaying = false;
+  const totalSec = 45 * 60 + 20;
+
+  function fmtFromPct(pct) {
+    const sec = Math.round((pct / 100) * totalSec);
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  playBtn.addEventListener('click', () => {
+    gpPlaying = !gpPlaying;
+    playIcon.textContent = gpPlaying ? 'pause' : 'play_arrow';
+  });
+  progress.addEventListener('input', () => {
+    current.textContent = fmtFromPct(progress.value);
+  });
+
+  if (desc && descToggle) {
+    desc.classList.add('is-collapsed');
+    descToggle.addEventListener('click', () => {
+      const collapsed = desc.classList.toggle('is-collapsed');
+      descToggleLabel.textContent = collapsed ? '展开全文' : '收起';
+      descToggleIcon.textContent = collapsed ? 'expand_more' : 'expand_less';
+    });
+  }
+})();
+</script>
+</body></html>

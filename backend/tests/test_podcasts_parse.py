@@ -1,11 +1,14 @@
 """POST /api/podcasts/parse 测试。"""
 
 import json
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 from src.services.podcast_exceptions import PodcastParseError
+
+from tests.conftest import register_test_user
 
 SAMPLE_HTML = """
 <html><head>
@@ -37,6 +40,7 @@ SOURCE_URL = "https://www.xiaoyuzhoufm.com/episode/696f522e109824f9e18a114e"
 
 class TestParsePodcastApi:
     def test_invalid_url_format(self, client: TestClient) -> None:
+        register_test_user(client)
         response = client.post("/api/podcasts/parse", json={"source_url": "https://example.com"})
         assert response.status_code == 400
         body = response.json()
@@ -44,6 +48,7 @@ class TestParsePodcastApi:
         assert "链接格式无效" in body["message"]
 
     def test_parse_success(self, client: TestClient) -> None:
+        register_test_user(client)
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.text = SAMPLE_HTML
@@ -53,9 +58,15 @@ class TestParsePodcastApi:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "src.services.xiaoyuzhou_parser_service.httpx.AsyncClient",
-            return_value=mock_client,
+        with (
+            patch(
+                "src.services.xiaoyuzhou_parser_service.httpx.AsyncClient",
+                return_value=mock_client,
+            ),
+            patch(
+                "src.services.podcast_service.download_podcast_cover",
+                AsyncMock(return_value=Path("/tmp/cover.jpg")),
+            ),
         ):
             response = client.post("/api/podcasts/parse", json={"source_url": SOURCE_URL})
 
@@ -68,11 +79,12 @@ class TestParsePodcastApi:
         assert data["title"].startswith("自我进化论")
         assert data["podcast_name"] == "自我进化论"
         assert data["duration"] == 3180
-        assert data["cover_url"] == "https://image.xyzcdn.net/cover.jpg"
+        assert data["cover_url"] == f"/api/podcasts/{data['id']}/cover"
         assert "audio_source_url" not in data
         assert "audio" not in json.dumps(data)
 
     def test_parse_failure_when_page_empty(self, client: TestClient) -> None:
+        register_test_user(client)
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.text = "<html></html>"

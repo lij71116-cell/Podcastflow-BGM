@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
 
 * {
   box-sizing: border-box;
@@ -8,11 +8,56 @@ body {
   margin: 0;
   font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
-  color: #1f1f1f;
-  background: #fafaf8;
+  color: var(--text);
+  background: var(--bg);
   line-height: 1.5;
 }
 
 #root {
   min-height: 100vh;
+  overflow-x: clip;
+}
+
+html {
+  overflow-x: clip;
+}
+
+@media (max-width: 1023px) {
+  .page-content,
+  .create-page,
+  .library-page,
+  .detail-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .create-parse-row .ant-input,
+  .create-parse-row .ant-btn {
+    width: 100%;
+  }
+
+  .library-toolbar-actions {
+    width: 100%;
+  }
+
+  .library-date-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+body.has-pwa-bar:not(.has-player) {
+  padding-bottom: 52px;
+}
+
+body.has-pwa-bar.has-player {
+  padding-bottom: calc(var(--player-h) + 52px);
+}
+
+.auth-route-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
 }

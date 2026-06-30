@@ -9,6 +9,7 @@ import httpx
 from pycore.core.logger import get_logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import AppSettings, get_settings
+from src.core.cover_cache import bgm_cover_api_path, download_podcast_cover, resolve_cover_file
 from src.core.ffprobe import probe_audio_file
 from src.models.bgm import BgmSourceResponse
 from src.repositories.bgm_repository import BgmRepository
@@ -48,6 +49,7 @@ def _to_response(entity: object) -> BgmSourceResponse:
         duration=entity.duration,
         format=entity.format,
         status=entity.status,
+        cover_url=entity.cover_url,
         created_at=entity.created_at.isoformat(),
     )
 
@@ -108,7 +110,7 @@ class BgmService:
 
     async def upload_file(
         self,
-        session_id: str,
+        user_id: str,
         filename: str,
         content: bytes,
     ) -> BgmSourceResponse:
@@ -132,7 +134,7 @@ class BgmService:
             raise BgmFormatError("BGM 格式不支持，仅支持 mp3 / m4a / wav") from exc
 
         entity = await self._repo.create(
-            session_id=session_id,
+            user_id=user_id,
             source_type="upload",
             source_url=None,
             file_path=str(dest),
@@ -145,7 +147,7 @@ class BgmService:
 
     async def validate_and_download_url(
         self,
-        session_id: str,
+        user_id: str,
         source_url: str,
     ) -> BgmSourceResponse:
         url = source_url.strip()
@@ -194,7 +196,7 @@ class BgmService:
             raise BgmUrlUnavailableError("BGM 链接不可用，请重新上传或更换链接") from exc
 
         entity = await self._repo.create(
-            session_id=session_id,
+            user_id=user_id,
             source_type="url",
             source_url=url,
             file_path=str(dest),
@@ -205,8 +207,8 @@ class BgmService:
         await self._db.commit()
         return _to_response(entity)
 
-    async def get_stream_file(self, session_id: str, bgm_id: str) -> tuple[Path, str]:
-        entity = await self._repo.get_by_id(session_id, bgm_id)
+    async def get_stream_file(self, user_id: str, bgm_id: str) -> tuple[Path, str]:
+        entity = await self._repo.get_by_id(user_id, bgm_id)
         if entity is None or entity.status != "available":
             raise BgmNotFoundError("BGM 资源不存在")
         path = Path(entity.file_path)
@@ -221,13 +223,14 @@ class BgmService:
 
     async def _download_audio_to_storage(
         self,
-        session_id: str,
+        user_id: str,
         *,
         source_type: str,
         source_url: str,
         title: str,
         audio_url: str,
         fallback_duration: int = 0,
+        remote_cover_url: str = "",
     ) -> BgmSourceResponse:
         try:
             async with httpx.AsyncClient(
@@ -271,7 +274,7 @@ class BgmService:
 
         duration = probe.duration or fallback_duration
         entity = await self._repo.create(
-            session_id=session_id,
+            user_id=user_id,
             source_type=source_type,
             source_url=source_url,
             file_path=str(dest),
@@ -279,22 +282,45 @@ class BgmService:
             duration=duration,
             fmt=probe.format,
         )
+
+        if remote_cover_url:
+            saved = await download_podcast_cover(
+                self._settings.storage_root,
+                entity.id,
+                remote_cover_url,
+                referer="https://music.douyin.com/",
+            )
+            if saved is not None:
+                api_path = bgm_cover_api_path(entity.id)
+                await self._repo.update_cover_url(entity.id, api_path)
+                entity.cover_url = api_path
+
         await self._db.commit()
         return _to_response(entity)
 
     async def validate_qishui_share(
         self,
-        session_id: str,
+        user_id: str,
         share_url: str,
     ) -> BgmSourceResponse:
         from src.services.qishui_parser_service import QishuiParserService
 
         parsed = await QishuiParserService().parse(share_url)
         return await self._download_audio_to_storage(
-            session_id,
+            user_id,
             source_type="qishui_share",
             source_url=parsed.share_url,
             title=parsed.title,
             audio_url=parsed.audio_url,
             fallback_duration=parsed.duration,
+            remote_cover_url=parsed.cover_url,
         )
+
+    async def get_cover_file(self, user_id: str, bgm_id: str) -> Path:
+        entity = await self._repo.get_by_id(user_id, bgm_id)
+        if entity is None:
+            raise BgmNotFoundError("BGM 资源不存在")
+        path = resolve_cover_file(self._settings.storage_root, bgm_id)
+        if path is None or not path.is_file():
+            raise BgmNotFoundError("BGM 封面不存在")
+        return path

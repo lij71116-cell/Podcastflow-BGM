@@ -14,6 +14,7 @@ EXPECTED_TABLES = frozenset(
         "bgm_sources",
         "mixed_audio_assets",
         "mix_tasks",
+        "playback_progress",
     }
 )
 

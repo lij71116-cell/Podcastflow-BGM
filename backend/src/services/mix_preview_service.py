@@ -24,14 +24,12 @@ from src.services.mix_exceptions import (
 
 logger = get_logger()
 
-PREVIEW_TIMEOUT_SECONDS = 120
 PREVIEW_TTL_SECONDS = 3600
-DEFAULT_PREVIEW_DURATION = 30
 
 
 @dataclass(frozen=True)
 class _PreviewEntry:
-    session_id: str
+    user_id: str
     path: Path
     created_at: float
 
@@ -67,13 +65,13 @@ class MixPreviewService:
 
     async def create_preview(
         self,
-        session_id: str,
+        user_id: str,
         body: PreviewMixRequest,
     ) -> PreviewMixResponse:
         _cleanup_expired_previews()
 
-        podcast = await self._podcast_repo.get_by_id(session_id, body.podcast_source_id)
-        bgm = await self._bgm_repo.get_by_id(session_id, body.bgm_source_id)
+        podcast = await self._podcast_repo.get_by_id(user_id, body.podcast_source_id)
+        bgm = await self._bgm_repo.get_by_id(user_id, body.bgm_source_id)
 
         if podcast is None or bgm is None or bgm.status != "available":
             raise MixResourceNotFoundError("播客或 BGM 资源不存在")
@@ -90,7 +88,12 @@ class MixPreviewService:
 
         start_sec = min(body.start_sec, max(0, podcast.duration - 1))
         max_preview = max(5, podcast.duration - start_sec)
-        duration_sec = min(body.duration_sec, max_preview)
+        if body.duration_sec is None:
+            duration_sec = max_preview
+        else:
+            duration_sec = min(body.duration_sec, max_preview)
+
+        preview_timeout = max(120, self._settings.mix_timeout_seconds)
 
         preview_id = str(uuid.uuid4())
         output_path = _preview_dir(self._settings) / f"{preview_id}.mp3"
@@ -107,10 +110,12 @@ class MixPreviewService:
             start_sec=start_sec,
             podcast_playback_rate=body.mix_config.podcast_playback_rate,
             bgm_playback_rate=body.mix_config.bgm_playback_rate,
+            fade_in=body.mix_config.fade_in,
+            fade_out=body.mix_config.fade_out,
         )
 
         try:
-            exit_code = await _run_preview_ffmpeg(cmd)
+            exit_code = await _run_preview_ffmpeg(cmd, preview_timeout)
         except TimeoutError as exc:
             output_path.unlink(missing_ok=True)
             raise MixPreviewError("试听生成超时，请稍后重试") from exc
@@ -126,7 +131,7 @@ class MixPreviewService:
             actual_duration = duration_sec
 
         _preview_registry[preview_id] = _PreviewEntry(
-            session_id=session_id,
+            user_id=user_id,
             path=output_path,
             created_at=time.time(),
         )
@@ -145,10 +150,10 @@ class MixPreviewService:
             start_sec=start_sec,
         )
 
-    def get_preview_path(self, session_id: str, preview_id: str) -> Path:
+    def get_preview_path(self, user_id: str, preview_id: str) -> Path:
         _cleanup_expired_previews()
         entry = _preview_registry.get(preview_id)
-        if entry is None or entry.session_id != session_id:
+        if entry is None or entry.user_id != user_id:
             raise MixForbiddenError("试听资源不存在或已过期")
         if not entry.path.is_file():
             _preview_registry.pop(preview_id, None)
@@ -156,14 +161,14 @@ class MixPreviewService:
         return entry.path
 
 
-async def _run_preview_ffmpeg(cmd: list[str]) -> int:
+async def _run_preview_ffmpeg(cmd: list[str], timeout_seconds: int) -> int:
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.PIPE,
     )
     try:
-        await asyncio.wait_for(proc.wait(), timeout=PREVIEW_TIMEOUT_SECONDS)
+        await asyncio.wait_for(proc.wait(), timeout=timeout_seconds)
     except TimeoutError:
         proc.kill()
         await proc.wait()

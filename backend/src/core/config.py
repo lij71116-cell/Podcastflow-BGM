@@ -17,6 +17,10 @@ _ENV_KEY_MAP: dict[str, str] = {
     "STORAGE_ROOT": "storage_root",
     "SESSION_SECRET": "session_secret",
     "SESSION_COOKIE_NAME": "session_cookie_name",
+    "JWT_SECRET": "jwt_secret",
+    "JWT_EXPIRE_HOURS": "jwt_expire_hours",
+    "JWT_COOKIE_NAME": "jwt_cookie_name",
+    "JWT_ALGORITHM": "jwt_algorithm",
     "FFMPEG_PATH": "ffmpeg_path",
     "FFPROBE_PATH": "ffprobe_path",
     "MAX_BGM_FILE_SIZE_MB": "max_bgm_file_size_mb",
@@ -28,6 +32,8 @@ _DEFAULT_CORS = [
     "http://127.0.0.1:5199",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
     "http://localhost:5200",
     "http://127.0.0.1:5200",
     "http://localhost:5201",
@@ -46,6 +52,10 @@ class AppSettings(BaseSettings):
     storage_root: str = "backend/storage"
     session_secret: str = ""
     session_cookie_name: str = "podcast_flow_session"
+    jwt_secret: str = ""
+    jwt_expire_hours: int = 168
+    jwt_cookie_name: str = "podcast_flow_token"
+    jwt_algorithm: str = "HS256"
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
     max_bgm_file_size_mb: int = 50

@@ -1,11 +1,28 @@
 """测试夹具。"""
 
+import uuid
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from src.core.config import AppSettings, get_settings
+
+
+def register_test_user(client: TestClient, suffix: str | None = None) -> dict[str, object]:
+    """注册测试用户并保留 JWT Cookie 在 client 上。"""
+    token = suffix or uuid.uuid4().hex[:8]
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "username": f"user_{token}",
+            "email": f"user_{token}@example.com",
+            "password": "password123",
+            "password_confirm": "password123",
+        },
+    )
+    assert response.status_code == 200
+    return response.json()["data"]["user"]
 
 
 def make_test_settings(tmp_path: Path, **overrides: object) -> AppSettings:
@@ -17,6 +34,10 @@ def make_test_settings(tmp_path: Path, **overrides: object) -> AppSettings:
         "storage_root": str(tmp_path / "storage"),
         "session_secret": "test-session-secret",
         "session_cookie_name": "podcast_flow_session",
+        "jwt_secret": "test-jwt-secret-key-for-unit-tests",
+        "jwt_expire_hours": 168,
+        "jwt_cookie_name": "podcast_flow_token",
+        "jwt_algorithm": "HS256",
         "ffmpeg_path": "ffmpeg-not-installed-for-test",
         "ffprobe_path": "ffprobe-not-installed-for-test",
     }

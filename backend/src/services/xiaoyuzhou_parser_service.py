@@ -87,7 +87,7 @@ def _build_parsed_episode(source_url: str, episode_id: str, html: str) -> Parsed
 
     if ld:
         title = str(ld.get("name") or og.get("og:title") or "").strip()
-        description = str(ld.get("description") or "").strip()
+        description = str(ld.get("description") or og.get("og:description") or "").strip()
         duration = _parse_iso8601_duration(str(ld.get("timeRequired") or ""))
         audio_source_url = ""
         media = ld.get("associatedMedia")
@@ -99,7 +99,7 @@ def _build_parsed_episode(source_url: str, episode_id: str, html: str) -> Parsed
             podcast_name = str(series.get("name") or "").strip()
     else:
         title = og.get("og:title", "").strip()
-        description = ""
+        description = og.get("og:description", "").strip()
         duration = 0
         audio_source_url = og.get("og:audio", "").strip()
         podcast_name = ""
@@ -121,7 +121,7 @@ def _build_parsed_episode(source_url: str, episode_id: str, html: str) -> Parsed
         podcast_name=podcast_name,
         cover_url=cover_url,
         duration=duration,
-        description=description[:2000],
+        description=description[:10000],
         audio_source_url=audio_source_url,
     )
 

@@ -17,3 +17,4 @@ backend/logs/
 backend/data/*.db
 backend/storage/bgm/
 backend/storage/mixed/
+backend/storage/covers/

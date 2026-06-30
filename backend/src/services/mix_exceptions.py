@@ -15,3 +15,7 @@ class FFmpegUnavailableError(Exception):
 
 class MixPreviewError(Exception):
     """混音试听生成失败。"""
+
+
+class MixInProgressError(Exception):
+    """合成进行中，不可重复提交。"""

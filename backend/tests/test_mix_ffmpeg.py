@@ -33,3 +33,37 @@ def test_build_mix_command_default_speed_omits_atempo() -> None:
         duration_sec=60,
     )
     assert "atempo" not in " ".join(cmd)
+
+
+def test_build_mix_command_includes_afade_filters() -> None:
+    cmd = build_mix_command(
+        "ffmpeg",
+        "podcast.m4a",
+        "bgm.mp3",
+        "out.mp3",
+        podcast_volume=1.0,
+        bgm_volume=0.15,
+        bgm_loop=True,
+        duration_sec=120,
+        fade_in=3,
+        fade_out=5,
+    )
+    joined = " ".join(cmd)
+    assert "afade=t=in:st=0:d=3" in joined
+    assert "afade=t=out:st=115:d=5" in joined
+
+
+def test_build_mix_command_skips_fade_when_zero() -> None:
+    cmd = build_mix_command(
+        "ffmpeg",
+        "podcast.m4a",
+        "bgm.mp3",
+        "out.mp3",
+        podcast_volume=1.0,
+        bgm_volume=0.15,
+        bgm_loop=True,
+        duration_sec=120,
+        fade_in=0,
+        fade_out=0,
+    )
+    assert "afade" not in " ".join(cmd)

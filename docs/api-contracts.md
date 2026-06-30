@@ -1,7 +1,7 @@
 # 接口契约
 
 > 前端 Mock 和后端实现的唯一对齐依据。任何变更必须同步更新本文件。  
-> 项目：Podcast Flow · 版本：MVP V1.0 · 2026-06-25
+> 项目：Podcast Flow · 版本：V2.0（V1 MVP 基线 + 本章增量）· 2026-06-29
 
 ---
 
@@ -757,3 +757,252 @@ Range: bytes=0-
 | `frontend/src/mocks/mixed-audio.ts` | POST/GET/DELETE /api/mixed-audios/* |
 
 Mock 数据结构必须与本文件 DTO 定义完全一致。联调时设置 `VITE_USE_MOCK=false` 切换真实后端。
+
+---
+
+## V2.0 增量（2026-06-29）
+
+> V1 接口保持兼容语义，但 **鉴权从匿名 Session 改为登录用户 JWT**。V2 开发完成后，业务接口须携带有效登录态；V1 `podcast_flow_session` 仅作迁移期兼容或废弃（不合并数据）。
+
+### V2 鉴权约定
+
+- 登录成功后响应 `Set-Cookie: podcast_flow_token`（HttpOnly，SameSite=Lax）或等价 Bearer Token（由实现选定，前后端统一）
+- 未登录访问受保护接口 → HTTP 401，`code: 40101`
+- 资源不属于当前用户 → HTTP 403，`code: 40301`
+- 前端 Axios 继续 `withCredentials: true`；401 时跳转 `/auth`
+
+### UserDTO
+
+```json
+{
+  "id": "u_550e8400-e29b-41d4-a716-446655440000",
+  "username": "focus_listener",
+  "email": "user@example.com",
+  "display_name": "focus_listener",
+  "created_at": "2026-06-29T10:00:00+08:00"
+}
+```
+
+> **禁止返回** `password_hash`、重置 Token 明文。
+
+### MixConfigDTO（V2 扩展）
+
+在 V1 字段基础上增加：
+
+| 字段 | 类型 | 说明 | 默认 |
+|------|------|------|------|
+| fade_in | integer | BGM 淡入秒数（0–30） | 0 |
+| fade_out | integer | BGM 淡出秒数（0–30） | 0 |
+
+### PlaybackProgressDTO
+
+```json
+{
+  "mixed_audio_id": "550e8400-e29b-41d4-a716-446655440003",
+  "player_context": "global",
+  "position_seconds": 125.5,
+  "duration_seconds": 3180,
+  "updated_at": "2026-06-29T12:00:00+08:00"
+}
+```
+
+| player_context | 说明 |
+|----------------|------|
+| `global` | 底部 GlobalPlayerBar |
+| `inline` | 详情页内嵌播放器 |
+
+### PaginatedMixedAudioListDTO
+
+```json
+{
+  "items": [ /* MixedAudioAssetDTO */ ],
+  "total": 42,
+  "page": 1,
+  "page_size": 10
+}
+```
+
+---
+
+### POST /api/auth/register
+
+**说明：** 用户注册（无邮箱验证）。
+
+**请求体：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| username | string | 是 | 全局唯一，3–32 字符 |
+| email | string | 是 | 全局唯一，合法邮箱 |
+| password | string | 是 | ≥8 字符 |
+| password_confirm | string | 是 | 与 password 一致 |
+
+**响应（成功 200）：** `{ "code": 200, "data": { "user": UserDTO, "token": "..." } }`
+
+**错误码：** `40010` 用户名已存在 · `40011` 邮箱已存在 · `40012` 密码不一致
+
+---
+
+### POST /api/auth/login
+
+**说明：** 双模式登录。
+
+**请求体（二选一）：**
+
+```json
+{ "mode": "username", "username": "focus_listener", "password": "********" }
+```
+
+```json
+{ "mode": "email", "email": "user@example.com", "password": "********" }
+```
+
+**响应（成功 200）：** `{ "code": 200, "data": { "user": UserDTO, "token": "..." } }`
+
+**错误码：** `40102` 用户名或密码错误
+
+---
+
+### POST /api/auth/logout
+
+**说明：** 登出，清除服务端会话/Token 黑名单（若采用）。
+
+**响应（成功 200）：** `{ "code": 200, "data": { "logged_out": true } }`
+
+---
+
+### POST /api/auth/forgot-password
+
+> **V2.0 不实现**，接口契约保留供 V2.x 邮件功能接入。
+
+**说明：** 发送重置密码邮件。
+
+**请求体：** `{ "email": "user@example.com" }`
+
+**响应（成功 200）：** 统一返回成功（不泄露邮箱是否存在）
+
+**错误码：** `50302` 邮件服务不可用（开发 Mock 时可返回 mock 重置链接）
+
+---
+
+### POST /api/auth/reset-password
+
+> **V2.0 不实现**，随 forgot-password 一并延后。
+
+**请求体：** `{ "token": "...", "password": "...", "password_confirm": "..." }`
+
+**错误码：** `40013` Token 无效或过期
+
+---
+
+### POST /api/auth/change-password
+
+**说明：** 登录后修改密码。
+
+**请求体：** `{ "current_password": "...", "new_password": "...", "new_password_confirm": "..." }`
+
+**需登录：** 是
+
+---
+
+### GET /api/auth/me
+
+**说明：** 获取当前登录用户。
+
+**需登录：** 是
+
+**响应（成功 200）：** `{ "code": 200, "data": UserDTO }`
+
+---
+
+### GET /api/mixed-audios（V2 分页）
+
+**说明：** 获取当前 **用户** 下组合音频，支持分页与筛选。
+
+**Query 参数：**
+
+| 参数 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| page | integer | 1 | 页码，从 1 开始 |
+| page_size | integer | 10 | 每页条数，最大 50 |
+| q | string | — | 标题或播客名关键词 |
+| created_date | string | — | ISO 日期 `YYYY-MM-DD`，按创建日筛选 |
+
+**响应（成功 200）：** `data` 为 PaginatedMixedAudioListDTO
+
+---
+
+### DELETE /api/mixed-audios/batch
+
+**说明：** 批量删除当前用户拥有的组合音频。
+
+**请求体：** `{ "ids": ["id1", "id2"] }`
+
+**响应（成功 200）：**
+
+```json
+{
+  "code": 200,
+  "data": {
+    "deleted_count": 2,
+    "deleted_ids": ["id1", "id2"]
+  }
+}
+```
+
+---
+
+### PUT /api/mixed-audios/{id}/playback-progress
+
+**说明：** 上报播放进度（节流由前端控制，建议每 5–10 秒或 pause/seek 时上报）。
+
+**需登录：** 是
+
+**请求体：**
+
+| 字段 | 类型 | 必填 |
+|------|------|------|
+| player_context | string | 是 |
+| position_seconds | number | 是 |
+| duration_seconds | number | 否 |
+
+**响应（成功 200）：** `{ "code": 200, "data": PlaybackProgressDTO }`
+
+---
+
+### GET /api/mixed-audios/{id}/playback-progress
+
+**Query：** `player_context=global|inline`
+
+**响应（成功 200）：** `{ "code": 200, "data": PlaybackProgressDTO | null }`
+
+---
+
+### POST /api/mixed-audios/{id}/regenerate
+
+**说明：** 基于请求体中的混音配置 **覆盖** 当前资产（不新建 ID）。创建 MixTask 并异步合成。
+
+**需登录：** 是 · 资产须属于当前用户 · 合成中不可重复提交
+
+**请求体：**
+
+| 字段 | 类型 | 必填 |
+|------|------|------|
+| mix_config | MixConfigDTO | 是 |
+| bgm_id | string | 否 | 若更换 BGM 则传新 bgm_id |
+
+**响应（成功 200）：** 同 POST /api/mixed-audios 返回 mixed_audio + task
+
+---
+
+### V2 业务错误码增量
+
+| code | 含义 |
+|------|------|
+| 40101 | 未登录或 Token 无效 |
+| 40102 | 用户名或密码错误 |
+| 40010 | 用户名已存在 |
+| 40011 | 邮箱已存在 |
+| 40012 | 密码不一致 |
+| 40013 | 重置 Token 无效或过期 |
+| 50302 | 邮件服务不可用 |

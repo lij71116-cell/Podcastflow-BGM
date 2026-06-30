@@ -150,6 +150,8 @@ async def run_mix(mixed_audio_id: str, settings: AppSettings | None = None) -> N
         duration_sec=output_duration,
         podcast_playback_rate=podcast_rate,
         bgm_playback_rate=bgm_rate,
+        fade_in=max(0, min(30, int(mix_cfg.get("fade_in", 0) or 0))),
+        fade_out=max(0, min(30, int(mix_cfg.get("fade_out", 0) or 0))),
     )
 
     try:

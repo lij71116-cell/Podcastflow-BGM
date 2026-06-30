@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Podcast Flow - Content Upload</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind CSS Configuration -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#ff5729",
+                        "primary-container": "#163d35",
+                        "inverse-primary": "#a6cfc4",
+                        "inverse-on-surface": "#f2f1ed",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#512d24",
+                        "surface": "#faf9f5",
+                        "border-strong": "rgba(0, 0, 0, 0.12)",
+                        "text-primary": "#121212",
+                        "surface-tint": "#40655c",
+                        "outline-variant": "#c0c8c5",
+                        "primary": "#002720",
+                        "surface-container-highest": "#e3e2df",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#3c0800",
+                        "outline": "#717976",
+                        "background": "#faf9f5",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#414846",
+                        "surface-elevated": "#FAFAF8",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#c79487",
+                        "secondary": "#b32b00",
+                        "on-background": "#1b1c1a",
+                        "border-subtle": "rgba(0, 0, 0, 0.07)",
+                        "on-secondary": "#ffffff",
+                        "text-secondary": "#6B6B6B",
+                        "surface-bright": "#faf9f5",
+                        "surface-dim": "#dbdad6",
+                        "primary-fixed": "#c2ebdf",
+                        "on-tertiary-fixed": "#31130b",
+                        "on-primary-fixed": "#00201a",
+                        "on-primary-container": "#80a89d",
+                        "tertiary": "#381810",
+                        "tertiary-fixed": "#ffdad2",
+                        "surface-container": "#efeeea",
+                        "on-tertiary-fixed-variant": "#643d33",
+                        "text-tertiary": "#9CA3AF",
+                        "surface-container-high": "#e9e8e4",
+                        "on-secondary-container": "#550f00",
+                        "inverse-surface": "#30312e",
+                        "primary-hover": "#1E5248",
+                        "on-primary-fixed-variant": "#284d45",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f5f4f0",
+                        "primary-fixed-dim": "#a6cfc4",
+                        "secondary-fixed-dim": "#ffb4a1",
+                        "on-error-container": "#93000a",
+                        "surface-white": "#FFFFFF",
+                        "on-surface": "#1b1c1a",
+                        "on-secondary-fixed-variant": "#891e00",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e3e2df",
+                        "tertiary-fixed-dim": "#f1baac",
+                        "secondary-fixed": "#ffdbd2",
+                        "primary-soft": "rgba(22, 61, 53, 0.08)"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit-md": "16px",
+                        "unit-sm": "8px",
+                        "container-max": "1280px",
+                        "unit-xs": "4px",
+                        "unit-lg": "24px",
+                        "gutter": "20px",
+                        "margin-edge": "24px",
+                        "unit-xl": "48px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["DM Sans", "sans-serif"],
+                        "headline-md": ["Noto Sans SC", "sans-serif"],
+                        "body-md": ["Noto Sans SC", "sans-serif"],
+                        "mono-num": ["DM Sans", "monospace"],
+                        "label-sm": ["DM Sans", "sans-serif"],
+                        "display-lg-mobile": ["DM Sans", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["36px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-md": ["18px", { "lineHeight": "1.5", "fontWeight": "600" }],
+                        "body-md": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mono-num": ["14px", { "lineHeight": "1", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-text-primary min-h-screen flex flex-col font-body-md antialiased selection:bg-primary-soft selection:text-primary-container">
+<!-- TopNavBar (Web Focus) -->
+<header class="bg-surface/80 backdrop-blur-md sticky top-0 h-[60px] w-full z-40 hidden md:block shadow-sm">
+<div class="flex justify-between items-center px-margin-edge w-full max-w-container-max mx-auto h-full">
+<div class="text-headline-md font-headline-md font-bold text-primary flex items-center gap-1 before:content-[''] before:w-2 before:h-2 before:bg-primary before:rounded-full">
+                Podcast Flow
+            </div>
+<nav class="flex gap-6 h-full items-center">
+<!-- Active Navigation -->
+<a class="text-primary font-bold border-b-2 border-primary pb-1 h-full flex items-center text-label-sm font-label-sm" href="#">创建</a>
+<!-- Inactive Navigation -->
+<a class="text-text-secondary hover:text-primary transition-colors h-full flex items-center text-label-sm font-label-sm hover:bg-primary-soft transition-all duration-200 px-2 rounded-md" href="#">我的音频库</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-label-sm font-label-sm text-text-secondary hover:text-primary transition-colors">登录</button>
+<button class="text-label-sm font-label-sm bg-primary-container text-white px-4 py-1.5 rounded-full hover:bg-primary-hover transition-colors shadow-sm">注册</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-[800px] mx-auto px-margin-edge py-12 md:py-16 pb-32">
+<!-- Hero Section -->
+<div class="flex flex-col items-center text-center mb-12">
+<span class="inline-block bg-primary-soft text-primary-container px-3 py-1 rounded-full text-label-sm font-label-sm mb-4">当前仅支持小宇宙公开单集链接</span>
+<h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-3 tracking-tight">为小宇宙播客添加专注 BGM</h1>
+<p class="font-body-md text-body-md text-text-secondary max-w-md mx-auto">按步骤完成内容上传、混音配置与生成</p>
+</div>
+<!-- Timeline / Stepper -->
+<div class="flex items-center justify-between w-full max-w-[600px] mx-auto mb-10 relative">
+<div class="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 h-[2px] bg-surface-container-high -z-10"></div>
+<!-- Step 1: Active -->
+<div class="flex flex-col items-center gap-2 bg-surface px-2">
+<div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-mono-num text-mono-num shadow-md">1</div>
+<div class="text-center">
+<div class="font-headline-md text-[13px] text-primary">内容上传</div>
+<div class="font-body-md text-[11px] text-text-secondary">播客 + BGM</div>
+</div>
+</div>
+<!-- Step 2: Inactive -->
+<div class="flex flex-col items-center gap-2 bg-surface px-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-text-tertiary flex items-center justify-center font-mono-num text-mono-num border border-border-subtle">2</div>
+<div class="text-center">
+<div class="font-headline-md text-[13px] text-text-tertiary">混音配置</div>
+</div>
+</div>
+<!-- Step 3: Inactive -->
+<div class="flex flex-col items-center gap-2 bg-surface px-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-text-tertiary flex items-center justify-center font-mono-num text-mono-num border border-border-subtle">3</div>
+<div class="text-center">
+<div class="font-headline-md text-[13px] text-text-tertiary">生成与分享</div>
+</div>
+</div>
+</div>
+<!-- Main White Panel -->
+<div class="bg-surface-container-lowest rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] p-unit-lg md:p-8 flex flex-col gap-unit-xl border border-border-subtle/50 relative overflow-hidden">
+<!-- Top Subtle Decoration -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary-container/20 to-transparent"></div>
+<!-- CARD A: 播客上传 -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary-container bg-primary-soft p-1.5 rounded-lg text-[20px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mic</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">小宇宙播客</h2>
+</div>
+<div class="flex flex-col sm:flex-row gap-3">
+<div class="relative flex-1">
+<input class="w-full bg-surface-elevated border border-border-strong rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all placeholder:text-text-tertiary" placeholder="粘贴小宇宙单集链接，例如 https://www.xiaoyuzhoufm.com/episode/..." type="text" value="https://www.xiaoyuzhoufm.com/episode/12345"/>
+</div>
+<button class="bg-primary-container text-white px-6 py-3 rounded-lg font-headline-md text-[14px] hover:bg-primary-hover hover:shadow-md hover:-translate-y-[1px] transition-all whitespace-nowrap">解析播客</button>
+</div>
+<p class="font-body-md text-label-sm text-text-tertiary mt-[-4px]">支持直接从 App 复制单集分享链接</p>
+<!-- Parsed Result Card -->
+<div class="mt-2 bg-surface p-4 rounded-xl border border-border-subtle flex items-center gap-4 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-[2px] transition-all duration-300 group cursor-default">
+<div class="w-[80px] h-[80px] rounded-[8px] bg-surface-variant flex-shrink-0 relative overflow-hidden shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A minimalist, warm-toned podcast cover art featuring abstract geometric shapes representing productivity and flow. Soft lighting, cream background with deep green accents, high resolution, modern digital illustration style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfLG1CpE7mbCqg3j5M8DuVfbvDsp1z8cLt0UoJxrQCK1nPaxETs3OE1Viihw9sPin14eL75YSyQqs11WPqne0HtiP88i3Ak3YhCiXbbpEiOHo446H3-4lwA4vgvCg8ZVoATfwbq-fRKK0Os2lYJ5TI9dpxD3LUP9s8uvjRIpkNd3PTYU1rbPMdyVsV5KmPGCJQQaCK8NnxhU-J8_wryXmyhApz5qwoG0MqpVLQ4DF5M42JtW-f5ix8Y3Og_0RF3VWxBJoaQR-qZ9o"/>
+<!-- Default Avatar / Fallback -->
+<div class="absolute inset-0 flex items-center justify-center bg-primary-container/10 opacity-0 transition-opacity">
+<span class="font-headline-md text-primary-container text-xl font-bold">专</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-md text-[16px] text-on-surface truncate group-hover:text-primary-container transition-colors">如何建立可持续的专注习惯</h3>
+<p class="font-body-md text-[13px] text-text-secondary mt-1">播客：效率圆桌 · 53:00</p>
+</div>
+<div class="bg-primary-soft text-primary-container px-3 py-1.5 rounded-full flex items-center gap-1 flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-sm text-label-sm">解析成功</span>
+</div>
+</div>
+</section>
+<hr class="border-border-subtle"/>
+<!-- CARD B: BGM 上传 -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-[#E8471A] bg-[#E8471A]/10 p-1.5 rounded-lg text-[20px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">music_note</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">添加 BGM</h2>
+</div>
+<!-- Tabs -->
+<div class="flex gap-6 border-b border-border-subtle mb-2">
+<button class="pb-2 font-headline-md text-[15px] text-primary-container border-b-2 border-primary-container relative">
+                        本地上传
+                    </button>
+<button class="pb-2 font-headline-md text-[15px] text-text-tertiary hover:text-text-secondary transition-colors">
+                        音频链接
+                    </button>
+<button class="pb-2 font-headline-md text-[15px] text-text-tertiary hover:text-text-secondary transition-colors">
+                        汽水音乐链接
+                    </button>
+</div>
+<!-- Upload Zone -->
+<div class="border-2 border-dashed border-outline-variant/60 rounded-xl p-8 flex flex-col items-center justify-center bg-surface-elevated cursor-pointer hover:bg-surface-container-low hover:border-primary-container/50 transition-all duration-300 group">
+<div class="w-12 h-12 rounded-full bg-surface shadow-sm border border-border-subtle flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary-container transition-colors">cloud_upload</span>
+</div>
+<p class="font-headline-md text-[15px] text-on-surface mb-1">点击或拖拽上传 BGM</p>
+<p class="font-body-md text-[13px] text-text-tertiary">支持 MP3, WAV 格式，最大 100MB</p>
+</div>
+<!-- Success Tag for BGM -->
+<div class="inline-flex self-start items-center gap-1.5 bg-[#E8471A]/10 text-[#E8471A] px-3 py-1.5 rounded-full mt-2">
+<span class="material-symbols-outlined text-[16px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-sm text-[13px] font-medium tracking-wide">BGM 可用 · Focus Rain · 03:00</span>
+</div>
+</section>
+</div>
+<!-- Footer Actions -->
+<div class="mt-10 flex justify-center">
+<button class="w-full sm:w-auto bg-primary-container text-white px-10 py-3.5 rounded-full font-headline-md text-[16px] hover:bg-primary-hover shadow-[0_4px_12px_rgba(22,61,53,0.2)] hover:shadow-[0_8px_20px_rgba(22,61,53,0.3)] hover:-translate-y-[2px] transition-all flex items-center justify-center gap-2 group">
+                下一步：混音配置
+                <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Focus / Player Hybrid) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex items-center justify-between px-6 py-3 bg-surface/90 backdrop-blur-lg z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] border-none">
+<a class="flex flex-col items-center justify-center text-text-secondary px-4 py-1 hover:text-primary-hover transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">play_circle</span>
+<span class="text-label-sm font-label-sm">播放中</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-secondary px-4 py-1 hover:text-primary-hover transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">tune</span>
+<span class="text-label-sm font-label-sm">混音控制</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-secondary px-4 py-1 hover:text-primary-hover transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">more_horiz</span>
+<span class="text-label-sm font-label-sm">更多</span>
+</a>
+</nav>
+</body></html>

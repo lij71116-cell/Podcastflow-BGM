@@ -3,111 +3,39 @@
 import asyncio
 import json
 import uuid
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 from src.core.config import AppSettings
-from src.db.models import AppSession, BgmSource, MixedAudioAsset, PodcastSource
-from src.db.session import get_db_context
 
-
-async def _seed_mixed_asset(
-    test_settings: AppSettings,
-    session_id: str,
-    *,
-    title: str,
-    created_offset_sec: int = 0,
-) -> str:
-    from datetime import UTC, datetime, timedelta
-
-    bgm_file = Path(test_settings.storage_root) / "bgm" / f"bgm-{uuid.uuid4()}.mp3"
-    bgm_file.parent.mkdir(parents=True, exist_ok=True)
-    bgm_file.write_bytes(b"fake-bgm")
-
-    podcast_id = str(uuid.uuid4())
-    bgm_id = str(uuid.uuid4())
-    mixed_id = str(uuid.uuid4())
-    now = datetime.now(tz=UTC) + timedelta(seconds=created_offset_sec)
-
-    async with get_db_context() as db:
-        existing = await db.get(AppSession, session_id)
-        if existing is None:
-            db.add(AppSession(session_id=session_id))
-        db.add(
-            PodcastSource(
-                id=podcast_id,
-                session_id=session_id,
-                source_url="https://www.xiaoyuzhoufm.com/episode/test",
-                episode_id="test",
-                title="测试播客单集",
-                podcast_name="测试节目",
-                cover_url="https://example.com/cover.jpg",
-                duration=120,
-                audio_source_url="https://example.com/podcast.m4a",
-            )
-        )
-        db.add(
-            BgmSource(
-                id=bgm_id,
-                session_id=session_id,
-                source_type="upload",
-                file_path=str(bgm_file),
-                title="test-bgm",
-                duration=60,
-                format="mp3",
-                status="available",
-            )
-        )
-        db.add(
-            MixedAudioAsset(
-                id=mixed_id,
-                session_id=session_id,
-                podcast_source_id=podcast_id,
-                bgm_source_id=bgm_id,
-                title=title,
-                duration=120,
-                mix_config=json.dumps(
-                    {
-                        "podcast_volume": 1.0,
-                        "podcast_playback_rate": 1.0,
-                        "bgm_volume": 0.15,
-                        "bgm_playback_rate": 1.0,
-                        "bgm_loop": True,
-                    }
-                ),
-                status="completed",
-                output_file_path=str(Path(test_settings.storage_root) / "mixed" / f"{mixed_id}.mp3"),
-                created_at=now,
-                updated_at=now,
-            )
-        )
-        await db.commit()
-
-    return mixed_id
+from tests.conftest import register_test_user
+from tests.helpers import seed_mixed_asset
 
 
 class TestMixedAudioListAndDetail:
     def test_list_empty(self, client: TestClient) -> None:
-        client.get("/api/session")
+        register_test_user(client)
         response = client.get("/api/mixed-audios")
         assert response.status_code == 200
         body = response.json()
         assert body["code"] == 200
         assert body["data"]["items"] == []
         assert body["data"]["total"] == 0
+        assert body["data"]["page"] == 1
+        assert body["data"]["page_size"] == 10
 
-    def test_list_and_detail_session_scoped(
+    def test_list_and_detail_user_scoped(
         self,
         client: TestClient,
         test_settings: AppSettings,
     ) -> None:
-        session_a = client.get("/api/session").json()["data"]["session_id"]
+        user = register_test_user(client)
+        user_id = str(user["id"])
         older_id = asyncio.run(
-            _seed_mixed_asset(test_settings, session_a, title="较早资产", created_offset_sec=-10)
-        )
+            seed_mixed_asset(test_settings, user_id, title="较早资产", created_offset_sec=-10)
+        )[0]
         newer_id = asyncio.run(
-            _seed_mixed_asset(test_settings, session_a, title="最新资产", created_offset_sec=10)
-        )
+            seed_mixed_asset(test_settings, user_id, title="最新资产", created_offset_sec=10)
+        )[0]
 
         list_resp = client.get("/api/mixed-audios")
         assert list_resp.status_code == 200
@@ -120,6 +48,21 @@ class TestMixedAudioListAndDetail:
         assert "audio_source_url" not in json.dumps(items[0])
         assert "file_path" not in json.dumps(items[0])
 
+        page_resp = client.get("/api/mixed-audios", params={"page": 1, "page_size": 1})
+        assert page_resp.status_code == 200
+        page_body = page_resp.json()["data"]
+        assert page_body["total"] == 2
+        assert page_body["page"] == 1
+        assert page_body["page_size"] == 1
+        assert len(page_body["items"]) == 1
+        assert page_body["items"][0]["id"] == newer_id
+
+        search_resp = client.get("/api/mixed-audios", params={"q": "较早"})
+        assert search_resp.status_code == 200
+        search_items = search_resp.json()["data"]["items"]
+        assert len(search_items) == 1
+        assert search_items[0]["id"] == older_id
+
         detail_resp = client.get(f"/api/mixed-audios/{newer_id}")
         assert detail_resp.status_code == 200
         detail = detail_resp.json()["data"]
@@ -129,33 +72,25 @@ class TestMixedAudioListAndDetail:
         assert detail["mix_config"]["bgm_loop"] is True
 
     def test_detail_not_found(self, client: TestClient) -> None:
-        client.get("/api/session")
+        register_test_user(client)
         response = client.get(f"/api/mixed-audios/{uuid.uuid4()}")
         assert response.status_code == 404
         assert response.json()["code"] == 40401
 
-    def test_detail_other_session_forbidden(
+    def test_detail_other_user_forbidden(
         self,
         client: TestClient,
         test_settings: AppSettings,
     ) -> None:
-        owner_session = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-        other_session = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-        client.get("/api/session", cookies={"podcast_flow_session": owner_session})
+        owner = register_test_user(client, suffix="owner")
         mixed_id = asyncio.run(
-            _seed_mixed_asset(test_settings, owner_session, title="私有资产")
-        )
+            seed_mixed_asset(test_settings, str(owner["id"]), title="私有资产")
+        )[0]
 
-        client.get("/api/session", cookies={"podcast_flow_session": other_session})
-        response = client.get(
-            f"/api/mixed-audios/{mixed_id}",
-            cookies={"podcast_flow_session": other_session},
-        )
-        assert response.status_code == 404
-        assert response.json()["code"] == 40401
+        register_test_user(client, suffix="other")
+        response = client.get(f"/api/mixed-audios/{mixed_id}")
+        assert response.status_code == 403
+        assert response.json()["code"] == 40301
 
-        list_resp = client.get(
-            "/api/mixed-audios",
-            cookies={"podcast_flow_session": other_session},
-        )
+        list_resp = client.get("/api/mixed-audios")
         assert list_resp.json()["data"]["total"] == 0

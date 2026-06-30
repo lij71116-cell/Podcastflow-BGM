@@ -1,76 +1,74 @@
 # 生产部署指南（Vercel + Railway）
 
-架构：**Vercel 托管前端**，通过 `/api` 反向代理到 **Railway 后端**（同源 Cookie，无需改前端播放 URL）。
+架构：**Vercel 托管前端**，通过 `/api` 反向代理到 **Railway 后端**（同源 Cookie，JWT 鉴权）。
 
 ```text
 浏览器 → https://podcast-bgm.vercel.app
-           ├── /          → Vercel 静态资源（React）
-           └── /api/*     → 代理 → https://xxx.up.railway.app/api/*
+           ├── /          → Vercel 静态资源（React + PWA）
+           └── /api/*     → 代理 → https://podcast-bgm-production.up.railway.app/api/*
 ```
 
 ---
 
 ## 前置条件
 
-- GitHub 仓库：`lij71116-cell/Podcast-BGM`（或 `-BGM-`）
+- GitHub 仓库：[lij71116-cell/Podcastflow-BGM](https://github.com/lij71116-cell/Podcastflow-BGM)
 - [Railway 账号](https://railway.app)（建议 Hobby $5/月，含 Volume 与稳定运行）
-- [Vercel 账号](https://vercel.com)（前端已部署：**https://podcast-bgm.vercel.app**）
+- [Vercel 账号](https://vercel.com)（前端：**https://podcast-bgm.vercel.app**）
 
 ---
 
-## 第一步：Railway 连接 GitHub 并部署后端
+## 第一步：Railway 部署后端
 
-### 1. 创建项目
+### 1. 连接 GitHub
 
 1. 打开 https://railway.app/new
 2. 选择 **Deploy from GitHub repo**
-3. 授权并选择 **Podcast-BGM** 仓库
-4. 创建后进入该 Service 的 **Settings**
+3. 选择 **Podcastflow-BGM** 仓库
+4. 进入 Service → **Settings**
 
 ### 2. 构建配置
 
 | 项 | 值 |
 |----|-----|
 | **Root Directory** | 留空（仓库根目录） |
-| **Builder** | Dockerfile（由 `railway.json` 指定） |
+| **Builder** | Dockerfile（`railway.json`） |
 | **Dockerfile Path** | `backend/Dockerfile` |
 
-仓库根目录已有 `railway.json`，Railway 会自动识别。
-
-### 3. 添加持久化 Volume（必做）
-
-SQLite 与音频文件必须持久化：
+### 3. 持久化 Volume（必做）
 
 1. Service → **Settings** → **Volumes** → **Add Volume**
-2. **Mount Path** 填：`/data`
-3. 保存（Hobby 计划默认 5GB，够用）
+2. **Mount Path**：`/data`
 
-### 4. 环境变量
+### 4. 环境变量（V2 · JWT）
 
-Service → **Variables** 添加：
+Service → **Variables**：
 
 | 变量 | 值 |
-|------|-----|
+|------|------|
 | `HOST` | `0.0.0.0` |
 | `DEBUG` | `false` |
 | `DATABASE_PATH` | `/data/podcast_flow.db` |
 | `STORAGE_ROOT` | `/data/storage` |
-| `SESSION_SECRET` | 随机字符串（如 `openssl rand -hex 32` 生成） |
+| `JWT_SECRET` | 随机字符串（`openssl rand -hex 32`） |
+| `JWT_EXPIRE_HOURS` | `168` |
+| `JWT_COOKIE_NAME` | `podcast_flow_token` |
 | `CORS_ORIGINS` | `https://podcast-bgm.vercel.app` |
 | `FFMPEG_PATH` | `ffmpeg` |
 | `FFPROBE_PATH` | `ffprobe` |
 
-`PORT` 由 Railway 自动注入，无需手动设置。
+`PORT` 由 Railway 自动注入。`DEBUG=false` 时 JWT Cookie 为 Secure。
 
-### 5. 生成公网域名
+> **V2 迁移**：若 Railway 仍保留 V1 的 `SESSION_SECRET`，可删除；生产鉴权以 `JWT_SECRET` 为准。
 
-1. Service → **Settings** → **Networking**
-2. 点击 **Generate Domain**
-3. 得到类似 `podcast-flow-api-production-xxxx.up.railway.app` 的地址
-4. 验证：
+### 5. 公网域名
+
+1. Service → **Settings** → **Networking** → **Generate Domain**
+2. 当前生产域名示例：`podcast-bgm-production.up.railway.app`
+3. 验证：
 
 ```bash
-curl https://你的域名.up.railway.app/health
+curl https://podcast-bgm-production.up.railway.app/health
 ```
 
 ### 6. 资源建议
@@ -79,38 +77,30 @@ curl https://你的域名.up.railway.app/health
 |----|------|
 | 计划 | Hobby（$5/月） |
 | 内存 | ≥ 512MB（FFmpeg 混音） |
-| Volume | 5GB（Hobby 默认） |
-
-免费 $1/月额度仅够极小服务，**FFmpeg 混音容易 OOM 或停服**，不推荐生产使用。
+| Volume | 5GB |
 
 ---
 
-## 第二步：更新 Vercel API 代理
+## 第二步：Vercel API 代理
 
-编辑 `frontend/vercel.json`，将 Railway 域名写入 `destination`：
+`frontend/vercel.json` 中 `destination` 指向 Railway 域名：
 
 ```json
 {
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://你的域名.up.railway.app/api/:path*"
-    }
-  ]
+  "source": "/api/:path*",
+  "destination": "https://podcast-bgm-production.up.railway.app/api/:path*"
 }
 ```
 
-提交 push 后重新部署 Vercel：
+修改 Railway 域名后需 commit push 并重新部署 Vercel。
 
 ```bash
 cd frontend && vercel deploy --prod --yes
 ```
 
-或在 Vercel 控制台触发 Redeploy。
-
 ---
 
-## 第三步：Vercel 前端（若尚未配置）
+## 第三步：Vercel 前端
 
 | 项 | 值 |
 |----|-----|
@@ -121,20 +111,24 @@ cd frontend && vercel deploy --prod --yes
 环境变量：
 
 | 变量 | 值 |
-|------|-----|
+|------|------|
 | `VITE_USE_MOCK` | `false` |
 | `VITE_API_BASE_URL` | `/api` |
 
-当前生产地址：**https://podcast-bgm.vercel.app**
+生产地址：**https://podcast-bgm.vercel.app**
+
+PWA（manifest / SW）随 `npm run build` 自动产出；无需额外 Vercel 配置。
 
 ---
 
-## 全链路验证
+## 全链路验证（V2）
 
 1. 打开 https://podcast-bgm.vercel.app
-2. 解析小宇宙单集 → 上传 BGM → 生成组合音频
-3. 音频库播放正常
-4. DevTools → Network：`/api/*` 走 Vercel 域名；Cookie `podcast_flow_session` 已设置
+2. **注册 / 登录**（未登录不可访问创建页）
+3. 解析小宇宙单集 → BGM → 生成组合音频
+4. 音频库播放、续播、批量删除、详情重新生成
+5. DevTools → Network：`/api/*` 走 Vercel 同源；Cookie `podcast_flow_token` 已设置
+6. （可选）移动视口「添加到主屏幕」→ 后台播放
 
 ---
 
@@ -144,19 +138,18 @@ cd frontend && vercel deploy --prod --yes
 
 | 变量 | 说明 |
 |------|------|
-| `HOST` | `0.0.0.0` |
-| `PORT` | Railway 自动注入 |
-| `DEBUG` | 生产 `false`（启用 Secure Cookie） |
-| `DATABASE_PATH` | Volume 内 SQLite：`/data/podcast_flow.db` |
-| `STORAGE_ROOT` | Volume 内存储：`/data/storage` |
-| `SESSION_SECRET` | Session 签名密钥 |
-| `CORS_ORIGINS` | Vercel 前端域名（直连 Railway 时生效） |
-| `FFMPEG_PATH` / `FFPROBE_PATH` | Docker 镜像内 `ffmpeg` / `ffprobe` |
+| `JWT_SECRET` | JWT 签名密钥（**必填**） |
+| `JWT_EXPIRE_HOURS` | Token 有效期（小时） |
+| `JWT_COOKIE_NAME` | 默认 `podcast_flow_token` |
+| `DATABASE_PATH` | Volume 内 SQLite |
+| `STORAGE_ROOT` | Volume 内 `bgm/`、`mixed/`、`covers/` |
+| `CORS_ORIGINS` | Vercel 前端域名 |
+| `DEBUG` | 生产 `false` |
 
 ### Vercel
 
 | 变量 | 说明 |
-|------|-----|
+|------|------|
 | `VITE_USE_MOCK` | 必须 `false` |
 | `VITE_API_BASE_URL` | 必须 `/api` |
 
@@ -166,12 +159,12 @@ cd frontend && vercel deploy --prod --yes
 
 | 现象 | 处理 |
 |------|------|
-| API 502 | 确认 Railway 服务 Running；检查 `vercel.json` 域名是否正确 |
-| 合成失败 / OOM | 将 Railway 内存调到 512MB–1GB |
-| 数据丢失 | 确认 Volume 已挂载到 `/data`，且环境变量路径一致 |
-| Cookie 未写入 | `DEBUG=false`；Vercel 必须为 HTTPS |
-| CORS 错误 | 正常应只访问 Vercel `/api`；若直连 Railway 需设 `CORS_ORIGINS` |
-| 国内访问慢 | Railway 节点在海外，属正常；前端 Vercel 通常较快 |
+| API 502 | Railway 服务是否 Running；`vercel.json` 域名是否正确 |
+| 401 未登录 | 先注册登录；检查 `JWT_SECRET` 是否已设置 |
+| 合成失败 / OOM | Railway 内存调至 512MB–1GB |
+| 数据丢失 | Volume 挂载 `/data`，路径与环境变量一致 |
+| Cookie 未写入 | `DEBUG=false`；Vercel 必须 HTTPS |
+| PWA 不生效 | 确认 Vercel 已部署最新 build；清除旧 SW |
 
 ---
 
@@ -180,8 +173,8 @@ cd frontend && vercel deploy --prod --yes
 | 项 | 本地 | 生产 |
 |----|------|------|
 | 前端 API | Vite proxy → localhost:8100 | Vercel rewrite → Railway |
+| 鉴权 | JWT Cookie（`.env` 配 `JWT_SECRET`） | Railway Variables |
 | 数据库 | `backend/data/*.db` | Railway Volume `/data/` |
 | FFmpeg | 系统安装 | Docker 镜像内置 |
-| 配置来源 | `backend/.env` | Railway Variables |
 
-本地开发不受影响，仍按 `docs/startup.md` 启动。
+本地开发见 [`docs/startup.md`](startup.md)。

@@ -1,29 +1,87 @@
 .mix-preview-player {
-  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
 }
 
-.mix-preview-player-hint {
-  font-size: 12px;
-  color: #8c8c8c;
-  display: block;
-  margin-bottom: 8px;
+.mix-preview-player-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.mix-preview-player-controls {
+.mix-preview-player-head-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
-.mix-preview-player-progress {
-  flex: 1;
+.mix-preview-player-play-btn {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  flex-shrink: 0;
+}
+
+.mix-preview-player-meta {
+  min-width: 0;
+  text-align: left;
+}
+
+.mix-preview-player-title {
   margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.mix-preview-player-subtitle {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--text-secondary, #6b6b6b);
+  line-height: 1.4;
 }
 
 .mix-preview-player-time {
   font-size: 12px;
-  color: #8c8c8c;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.mix-preview-control-label {
+  width: 32px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary, #6b6b6b);
+}
+
+.mix-preview-control-value {
+  width: 36px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary, #6b6b6b);
+  font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.mix-preview-volume-icon {
+  font-size: 16px;
+  color: var(--text-secondary, #6b6b6b);
+  flex-shrink: 0;
+}
+
+.mix-preview-player-progress,
+.mix-preview-player-volume {
+  flex: 1;
+  margin: 0;
+}
+
+.mix-preview-player .preview-wave-bars {
+  margin-bottom: 12px;
 }

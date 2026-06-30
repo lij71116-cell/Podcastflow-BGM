@@ -9,53 +9,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 from src.core.config import AppSettings
-from src.db.models import AppSession, BgmSource, PodcastSource
 from src.db.session import get_db_context
 
-
-async def _seed_sources(
-    test_settings: AppSettings,
-    session_id: str,
-) -> tuple[str, str]:
-    bgm_file = Path(test_settings.storage_root) / "bgm" / "test-bgm.mp3"
-    bgm_file.parent.mkdir(parents=True, exist_ok=True)
-    bgm_file.write_bytes(b"fake-bgm")
-
-    podcast_id = str(uuid.uuid4())
-    bgm_id = str(uuid.uuid4())
-
-    async with get_db_context() as db:
-        existing = await db.get(AppSession, session_id)
-        if existing is None:
-            db.add(AppSession(session_id=session_id))
-        db.add(
-            PodcastSource(
-                id=podcast_id,
-                session_id=session_id,
-                source_url="https://www.xiaoyuzhoufm.com/episode/test",
-                episode_id="test",
-                title="测试播客",
-                podcast_name="测试节目",
-                cover_url="",
-                duration=120,
-                audio_source_url="https://example.com/podcast.m4a",
-            )
-        )
-        db.add(
-            BgmSource(
-                id=bgm_id,
-                session_id=session_id,
-                source_type="upload",
-                file_path=str(bgm_file),
-                title="test-bgm",
-                duration=60,
-                format="mp3",
-                status="available",
-            )
-        )
-        await db.commit()
-
-    return podcast_id, bgm_id
+from tests.conftest import register_test_user
+from tests.helpers import seed_sources
 
 
 def _create_payload(podcast_id: str, bgm_id: str) -> dict[str, object]:
@@ -72,7 +29,7 @@ def _create_payload(podcast_id: str, bgm_id: str) -> dict[str, object]:
 
 class TestCreateMixedAudio:
     def test_resource_not_found(self, client: TestClient) -> None:
-        client.get("/api/session")
+        register_test_user(client)
         with patch("src.services.mixed_audio_service.is_ffmpeg_available", return_value=True):
             response = client.post(
                 "/api/mixed-audios",
@@ -90,11 +47,9 @@ class TestCreateMixedAudio:
         assert response.json()["code"] == 40401
 
     def test_ffmpeg_unavailable(self, client: TestClient, test_settings: AppSettings) -> None:
-        import asyncio
-
-        session_resp = client.get("/api/session")
-        session_id = session_resp.json()["data"]["session_id"]
-        podcast_id, bgm_id = asyncio.run(_seed_sources(test_settings, session_id))
+        user = register_test_user(client)
+        user_id = str(user["id"])
+        podcast_id, bgm_id = asyncio.run(seed_sources(test_settings, user_id))
 
         with patch("src.services.mixed_audio_service.is_ffmpeg_available", return_value=False):
             response = client.post(
@@ -106,11 +61,9 @@ class TestCreateMixedAudio:
         assert response.json()["code"] == 50301
 
     def test_create_success(self, client: TestClient, test_settings: AppSettings) -> None:
-        import asyncio
-
-        session_resp = client.get("/api/session")
-        session_id = session_resp.json()["data"]["session_id"]
-        podcast_id, bgm_id = asyncio.run(_seed_sources(test_settings, session_id))
+        user = register_test_user(client)
+        user_id = str(user["id"])
+        podcast_id, bgm_id = asyncio.run(seed_sources(test_settings, user_id))
 
         with (
             patch("src.services.mixed_audio_service.is_ffmpeg_available", return_value=True),
@@ -134,18 +87,15 @@ class TestCreateMixedAudio:
 
 
 class TestGetMixTask:
-    def test_forbidden_wrong_session(self, client: TestClient, test_settings: AppSettings) -> None:
-        import asyncio
-
-        client.get("/api/session")
-        owner_session = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-        podcast_id, bgm_id = asyncio.run(_seed_sources(test_settings, owner_session))
+    def test_forbidden_wrong_user(self, client: TestClient, test_settings: AppSettings) -> None:
+        owner = register_test_user(client, suffix="owner")
+        user_id = str(owner["id"])
+        podcast_id, bgm_id = asyncio.run(seed_sources(test_settings, user_id))
 
         with (
             patch("src.services.mixed_audio_service.is_ffmpeg_available", return_value=True),
             patch("src.services.mixed_audio_service.schedule_mix"),
         ):
-            client.cookies.set("podcast_flow_session", owner_session)
             created = client.post(
                 "/api/mixed-audios",
                 json=_create_payload(podcast_id, bgm_id),
@@ -154,18 +104,15 @@ class TestGetMixTask:
         assert created.status_code == 200, created.text
 
         mixed_id = created.json()["data"]["mixed_audio"]["id"]
-        client.cookies.clear()
-        client.get("/api/session")
+        register_test_user(client, suffix="other")
         response = client.get(f"/api/mixed-audios/{mixed_id}/task")
         assert response.status_code == 403
         assert response.json()["code"] == 40301
 
     def test_get_task_success(self, client: TestClient, test_settings: AppSettings) -> None:
-        import asyncio
-
-        session_resp = client.get("/api/session")
-        session_id = session_resp.json()["data"]["session_id"]
-        podcast_id, bgm_id = asyncio.run(_seed_sources(test_settings, session_id))
+        user = register_test_user(client)
+        user_id = str(user["id"])
+        podcast_id, bgm_id = asyncio.run(seed_sources(test_settings, user_id))
 
         with (
             patch("src.services.mixed_audio_service.is_ffmpeg_available", return_value=True),
@@ -194,9 +141,9 @@ class TestMixWorker:
         from src.services.mix_worker import run_mix
         from src.services.mixed_audio_service import MixedAudioService
 
-        session_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-        client.get("/api/session", cookies={"podcast_flow_session": session_id})
-        podcast_id, bgm_id = await _seed_sources(test_settings, session_id)
+        user = register_test_user(client)
+        user_id = str(user["id"])
+        podcast_id, bgm_id = await seed_sources(test_settings, user_id)
 
         async with get_db_context() as db:
             service = MixedAudioService(db, test_settings)
@@ -205,7 +152,7 @@ class TestMixWorker:
                 patch("src.services.mixed_audio_service.schedule_mix"),
             ):
                 result = await service.create(
-                    session_id,
+                    user_id,
                     CreateMixedAudioRequest(
                         podcast_source_id=podcast_id,
                         bgm_source_id=bgm_id,
@@ -226,7 +173,7 @@ class TestMixWorker:
 
         async with get_db_context() as db:
             repo = MixedAudioRepository(db)
-            asset = await repo.get_asset_with_relations(session_id, mixed_id)
+            asset = await repo.get_asset_with_relations(user_id, mixed_id)
             assert asset is not None
             assert asset.status == "failed"
             task = await repo.get_latest_task(mixed_id)
@@ -244,10 +191,9 @@ class TestMixWorker:
         from src.services.mix_worker import run_mix
         from src.services.mixed_audio_service import MixedAudioService
 
-        session_id = "cccccccc-cccc-cccc-cccc-cccccccccccc"
-        client.get("/api/session")
-        client.cookies.set("podcast_flow_session", session_id)
-        podcast_id, bgm_id = await _seed_sources(test_settings, session_id)
+        user = register_test_user(client)
+        user_id = str(user["id"])
+        podcast_id, bgm_id = await seed_sources(test_settings, user_id)
 
         async with get_db_context() as db:
             service = MixedAudioService(db, test_settings)
@@ -256,7 +202,7 @@ class TestMixWorker:
                 patch("src.services.mixed_audio_service.schedule_mix"),
             ):
                 result = await service.create(
-                    session_id,
+                    user_id,
                     CreateMixedAudioRequest(
                         podcast_source_id=podcast_id,
                         bgm_source_id=bgm_id,
@@ -289,7 +235,7 @@ class TestMixWorker:
 
         async with get_db_context() as db:
             repo = MixedAudioRepository(db)
-            asset = await repo.get_asset_with_relations(session_id, mixed_id)
+            asset = await repo.get_asset_with_relations(user_id, mixed_id)
             assert asset is not None
             assert asset.status == "completed"
             assert asset.output_file_path == str(output_path)
@@ -301,7 +247,7 @@ class TestMixWorker:
 
 class TestMixPreviewApi:
     def test_preview_missing_resources(self, client: TestClient) -> None:
-        client.get("/api/session")
+        register_test_user(client)
         response = client.post(
             "/api/mixed-audios/preview",
             json={
@@ -320,25 +266,21 @@ class TestMixPreviewApi:
     def test_preview_success(self, client: TestClient, test_settings: AppSettings) -> None:
         from src.core.ffprobe import AudioProbeResult
 
-        preview_file = Path(test_settings.storage_root) / "previews" / "fake-preview.mp3"
-        preview_file.parent.mkdir(parents=True, exist_ok=True)
-        preview_file.write_bytes(b"fake-preview-mp3")
+        user = register_test_user(client)
+        user_id = str(user["id"])
+        podcast_id, bgm_id = asyncio.run(seed_sources(test_settings, user_id))
 
-        async def _fake_run(cmd: list[str]) -> int:
+        async def _fake_run(cmd: list[str], timeout_seconds: int = 1800) -> int:
             output = Path(cmd[-1])
             output.write_bytes(b"fake-preview-mp3")
             return 0
-
-        session_resp = client.get("/api/session")
-        session_id = session_resp.json()["data"]["session_id"]
-        podcast_id, bgm_id = asyncio.run(_seed_sources(test_settings, session_id))
 
         with (
             patch("src.services.mix_preview_service.is_ffmpeg_available", return_value=True),
             patch("src.services.mix_preview_service._run_preview_ffmpeg", new=_fake_run),
             patch(
                 "src.services.mix_preview_service.probe_audio_file",
-                AsyncMock(return_value=AudioProbeResult(duration=30, format="mp3")),
+                AsyncMock(return_value=AudioProbeResult(duration=120, format="mp3")),
             ),
         ):
             response = client.post(
@@ -350,7 +292,7 @@ class TestMixPreviewApi:
         body = response.json()
         assert body["code"] == 200
         data = body["data"]
-        assert data["duration"] == 30
+        assert data["duration"] == 120
         assert data["play_url"].startswith("/api/mixed-audios/preview/")
         assert data["start_sec"] == 0
 
@@ -359,6 +301,6 @@ class TestMixPreviewApi:
         assert stream.headers["content-type"].startswith("audio/mpeg")
 
     def test_preview_stream_forbidden(self, client: TestClient) -> None:
-        client.get("/api/session")
+        register_test_user(client)
         response = client.get(f"/api/mixed-audios/preview/{uuid.uuid4()}/stream")
         assert response.status_code == 403

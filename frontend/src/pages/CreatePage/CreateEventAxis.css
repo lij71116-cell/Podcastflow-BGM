@@ -1,0 +1,44 @@
+.create-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto 40px;
+  padding: 0 8px;
+}
+
+.step-node {
+  border: none;
+  cursor: default;
+  min-width: 72px;
+  max-width: 120px;
+}
+
+.step-node--clickable:not(:disabled) {
+  cursor: pointer;
+}
+
+.step-node--clickable:not(:disabled):hover .step-node__circle {
+  box-shadow: 0 0 0 4px rgba(22, 61, 53, 0.12);
+}
+
+.step-node__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (max-width: 479px) {
+  .step-node {
+    min-width: 56px;
+  }
+
+  .step-node__sub {
+    display: none;
+  }
+
+  .step-node__title {
+    font-size: 11px;
+  }
+}

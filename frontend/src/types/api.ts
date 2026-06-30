@@ -4,12 +4,52 @@ export interface ApiResponse<T> {
   data: T
 }
 
+export interface UserDTO {
+  id: string
+  username: string
+  email: string
+  display_name: string
+  created_at: string
+}
+
+export interface AuthSessionDTO {
+  user: UserDTO
+  token: string
+}
+
+export interface RegisterPayload {
+  username: string
+  email: string
+  password: string
+  password_confirm: string
+}
+
+export interface LoginPayload {
+  mode: 'username' | 'email'
+  username?: string
+  email?: string
+  password: string
+}
+
+export interface ChangePasswordPayload {
+  current_password: string
+  new_password: string
+  new_password_confirm: string
+}
+
+export interface ChangePasswordResultDTO {
+  password_changed: boolean
+  token: string
+}
+
 export interface MixConfigDTO {
   podcast_volume: number
   podcast_playback_rate: number
   bgm_volume: number
   bgm_playback_rate: number
   bgm_loop: boolean
+  fade_in?: number
+  fade_out?: number
 }
 
 export interface PodcastSourceDTO {
@@ -33,6 +73,7 @@ export interface BgmSourceDTO {
   duration: number
   format: string
   status: 'available' | 'unavailable'
+  cover_url: string
   created_at: string
 }
 
@@ -42,6 +83,7 @@ export interface PodcastBriefDTO {
   podcast_name: string
   cover_url: string
   source_url: string
+  description: string
 }
 
 export interface BgmBriefDTO {
@@ -49,6 +91,17 @@ export interface BgmBriefDTO {
   title: string
   source_type: 'upload' | 'url' | 'qishui_share'
   duration: number
+  cover_url: string
+}
+
+export type PlayerContext = 'global' | 'inline'
+
+export interface PlaybackProgressDTO {
+  mixed_audio_id: string
+  player_context: PlayerContext
+  position_seconds: number
+  duration_seconds?: number | null
+  updated_at: string
 }
 
 export interface MixedAudioAssetDTO {
@@ -84,4 +137,11 @@ export interface CreateMixedAudioResponse {
 export interface MixedAudioListResponse {
   items: MixedAudioAssetDTO[]
   total: number
+  page: number
+  page_size: number
+}
+
+export interface BatchDeleteMixedAudiosResponse {
+  deleted_count: number
+  deleted_ids: string[]
 }

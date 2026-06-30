@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { ApiResponse } from '@/types/api'
+import { useAuthStore } from '@/stores/authStore'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -13,9 +14,27 @@ http.interceptors.response.use(
   (response) => response.data as ApiResponse<unknown> as never,
   (error) => {
     if (axios.isAxiosError(error)) {
+      const status = error.response?.status
+      const url = error.config?.url ?? ''
       const body = error.response?.data as ApiResponse<null> | undefined
+
+      if (
+        status === 401 &&
+        import.meta.env.VITE_USE_MOCK !== 'true' &&
+        !url.includes('/auth/login') &&
+        !url.includes('/auth/register') &&
+        !url.includes('/auth/me')
+      ) {
+        useAuthStore.getState().clearUser()
+      }
+
       if (body?.message) {
         return Promise.reject(new Error(body.message))
+      }
+      if (status === 404 && import.meta.env.VITE_USE_MOCK === 'true') {
+        return Promise.reject(
+          new Error('接口 Mock 未实现，请刷新页面；汽水音乐真实解析需 VITE_USE_MOCK=false 并登录'),
+        )
       }
       if (error.code === 'ECONNABORTED') {
         return Promise.reject(new Error('请求超时，请稍后重试'))

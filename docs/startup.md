@@ -1,6 +1,6 @@
 # Podcast Flow 启动与验收指南
 
-> MVP V1.0 · 最后更新：2026-06-25
+> V2.0 · 最后更新：2026-06-29
 
 ## 环境要求
 
@@ -33,7 +33,7 @@ cd frontend && npm install && cd ..
 ```env
 HOST=127.0.0.1
 PORT=8100
-CORS_ORIGINS=http://localhost:5199,http://127.0.0.1:5199,http://localhost:5175,http://127.0.0.1:5175,http://localhost:5201,http://127.0.0.1:5201
+CORS_ORIGINS=http://localhost:5199,http://127.0.0.1:5199,http://localhost:5175,http://127.0.0.1:5175,http://localhost:5176,http://127.0.0.1:5176,http://localhost:5201,http://127.0.0.1:5201
 DATABASE_PATH=backend/data/podcast_flow.db
 STORAGE_ROOT=backend/storage
 SESSION_COOKIE_NAME=podcast_flow_session
@@ -74,11 +74,55 @@ npm run dev -- --host 127.0.0.1 --port 5201
 | 用途 | 前端 | 后端 |
 |------|------|------|
 | 自动验证 | 5199 | 8099 |
-| 用户门禁 | 5175（preview） | 8003 |
+| 用户门禁 / PWA preview | 5176（preview） | 8003 |
 
 切换方式：修改 `frontend/.env` 中 `VITE_BACKEND_PROXY_TARGET` 与后端 `PORT`。
 
-## 自动化验收（T-014）
+### PWA / 生产构建预览
+
+```bash
+cd frontend
+npm run build
+npm run preview -- --host 127.0.0.1 --port 5176
+```
+
+浏览器打开：http://127.0.0.1:5176（默认 preview 端口 5176，避免与占用 5175 的其他项目冲突）
+
+> **注意**：PWA、Service Worker 与后台播放能力仅在 `npm run build` + `npm run preview`（或生产部署）下生效；`npm run dev` 不会注册 SW。
+
+### 移动端后台播放（PWA）
+
+将站点「添加到主屏幕」后，可在切换 App 或锁屏时继续播放音频。实现要点：
+
+| 能力 | 说明 |
+|------|------|
+| Media Session API | 全局播放器与详情页内嵌播放器均绑定锁屏/通知栏控件（播放、暂停、快进/快退、拖动进度） |
+| 移动端 audio 属性 | `playsInline`、`preload="auto"`，避免 iOS 全屏抢占并提升后台续播稳定性 |
+| PWA standalone | `manifest.webmanifest` 中 `display: standalone`，从桌面图标启动时行为接近原生 App |
+
+**验收步骤（需真机 + preview/生产构建）**
+
+1. 手机与电脑同一局域网；`npm run build && npm run preview -- --host 0.0.0.0 --port 5176`
+2. 手机浏览器打开 `http://<电脑局域网 IP>:5176`，按引导「添加到主屏幕」
+3. 从桌面图标启动 → 登录 → 播放任意已完成组合音频
+4. 切到其他 App 或锁屏 → 音频应继续播放；锁屏界面应显示标题/封面与控制按钮
+5. 在锁屏点暂停/播放，回到 App 后状态应同步
+
+**平台限制**
+
+| 平台 | 说明 |
+|------|------|
+| iOS Safari PWA | 需 iOS 15+；须先在 App 内开始播放再切后台；系统可能因省电策略偶尔暂停，锁屏控件可恢复 |
+| Android Chrome PWA | 后台播放与 Media Session 支持较好 |
+| 桌面浏览器 | 标签页切到后台通常可继续播放，但非 PWA 场景无锁屏控件 |
+
+**排查**
+
+- 无锁屏控件：确认从 preview（5176）或生产环境打开，且已开始播放
+- 切后台即停：确认通过「添加到主屏幕」以 standalone 打开，而非普通浏览器标签
+- 图标/缓存旧版：删除主屏幕快捷方式后重新安装；Chrome DevTools → Application → Service Worker 可查看 `sw.js` 是否激活
+
+## 自动化验收（T-030 · V2 收官回归）
 
 在项目根目录执行：
 
@@ -96,6 +140,24 @@ npm run lint
 npm run build
 ```
 
+**T-030 回归结果（2026-06-29）**
+
+| 检查项 | 结果 |
+|--------|------|
+| pytest | 86 passed |
+| ruff | 通过 |
+| mypy | 通过（51 files） |
+| type-check / lint / build | 通过（lint 3 warnings，无 error） |
+| FFmpeg | 8.1.2 已安装 |
+| VITE_USE_MOCK | false（`.env` + `.env.production`） |
+| 用户门禁 | **已通过（2026-06-29）** |
+| 下载按钮 | 全站 UI 无「下载」入口 |
+| 路由守卫 | `/` `/library` `/detail/*` 经 `ProtectedRoute` 需登录 |
+
+> 完整测试报告：`.sdd/test-reports/T-030.md`
+
+## 自动化验收（T-014 · 历史）
+
 **T-014 回归结果（2026-06-25）**
 
 | 检查项 | 结果 |
@@ -107,26 +169,26 @@ npm run build
 | FFmpeg | 8.1.2 已安装 |
 | VITE_USE_MOCK | false（真实 API） |
 
-## 全链路手动验收清单
+## 全链路手动验收清单（V2）
 
 按顺序在浏览器完成（需 `VITE_USE_MOCK=false`）：
 
-1. **创建页 /** — 输入小宇宙公开单集链接 → 解析成功，展示播客信息
-2. **BGM** — 本地上传 / 链接 / 汽水音乐分享 任一方式校验通过
-3. **混音配置** — 调节播客/BGM 音量与倍速，点击「试听」双轨播放正常
-4. **生成** — 点击「生成组合音频」，等待合成完成（状态「已完成」）
-5. **音频库 /library** — 新资产出现在列表顶部；搜索、日期筛选、分页正常
-6. **播放** — 点击「播放」，底部全局播放器有声音
-7. **跨页** — 播放中进入详情页，音频不中断
-8. **详情 /detail/:id** — 信息完整（播客、BGM、混音配置）；内嵌播放器可控
-9. **删除** — 确认删除后列表消失；若正在播放则播放器关闭
-10. **合规** — 全站无「下载」按钮、无登录入口；无淡入淡出 / 重新生成（V1.1 功能）
+1. **注册 / 登录** — `/auth` 注册新账号；未登录访问 `/library` 应跳转登录
+2. **创建页 /** — 小宇宙公开单集链接解析；BGM 本地上传 / 链接 / 汽水音乐；混音含淡入淡出
+3. **生成** — 合成完成，状态「已完成」
+4. **音频库 /library** — 搜索、日期筛选、分页、批量删除
+5. **播放** — 列表「播放」→ 底部全局播放器有声音；跨页不中断
+6. **续播** — 播放中途刷新或重进，应提示并恢复进度（global / inline 各自记忆）
+7. **详情 /detail/:id** — 内嵌播放器、BGM 封面、重新生成（覆盖同 ID）
+8. **PWA** — preview 5176 移动视口可见安装引导；安装后主题色与图标正确
+9. **后台播放** — 真机 PWA：切 App / 锁屏后音频继续，锁屏控件可用
+10. **合规** — 全站无「下载」按钮
 
-## Session 说明
+## Session / 账号说明
 
-- MVP 无用户登录，通过 Cookie `podcast_flow_session` 隔离资产
-- 同一浏览器 Session 内资产共享；换浏览器或清 Cookie 后看不到他人/旧 Session 数据
-- 所有 `/api/*` 请求需携带 Cookie（前端 axios 已配置 `withCredentials: true`）
+- V2 使用账号登录（JWT Cookie），同一账号多端共享音频库
+- 前端 axios 已配置 `withCredentials: true`
+- 旧版 Session Cookie 数据不会自动迁移到新账号
 
 ## 常见问题
 
@@ -135,7 +197,9 @@ npm run build
 | 合成失败 / 503 | 确认 `ffmpeg -version` 可用 |
 | 播放无声音 | 确认资产状态为「已完成」；后端 8100 运行中 |
 | 播客解析失败 | 确认链接为小宇宙公开单集 URL |
-| 跨页播放中断 | 确认已更新至 T-012+（GlobalPlayerBar 在 Router 外层） |
+| 跨页播放中断 | 确认 GlobalPlayerBar 在 Router 外层 |
+| PWA 后台不播 | 须 build+preview 或生产环境；真机「添加到主屏幕」后从图标启动 |
+| 锁屏无控件 | iOS 需先在前台开始播放；检查 Media Session 是否绑定（Chrome Remote Debugging） |
 
 ## 数据目录
 

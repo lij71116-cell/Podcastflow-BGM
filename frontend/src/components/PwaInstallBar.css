@@ -1,0 +1,52 @@
+.pwa-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--text);
+  color: #fff;
+  padding: 14px 18px;
+  font-size: 13px;
+  z-index: 70;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pwa-bar.visible {
+  display: flex;
+}
+
+.pwa-bar--above-player {
+  bottom: var(--player-h);
+}
+
+.pwa-dismiss {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.pwa-dismiss:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+@media (min-width: 1024px) {
+  .pwa-bar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  body.has-player .pwa-bar.visible {
+    bottom: calc(var(--player-h) + 12px);
+  }
+}
