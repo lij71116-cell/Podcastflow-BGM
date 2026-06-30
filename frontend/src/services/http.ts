@@ -16,7 +16,7 @@ http.interceptors.response.use(
     if (axios.isAxiosError(error)) {
       const status = error.response?.status
       const url = error.config?.url ?? ''
-      const body = error.response?.data as ApiResponse<null> | undefined
+      const body = error.response?.data as ApiResponse<null> | { detail?: Array<{ msg?: string }> } | undefined
 
       if (
         status === 401 &&
@@ -28,8 +28,17 @@ http.interceptors.response.use(
         useAuthStore.getState().clearUser()
       }
 
-      if (body?.message) {
+      if (body && 'message' in body && body.message) {
         return Promise.reject(new Error(body.message))
+      }
+      if (body && 'detail' in body && Array.isArray(body.detail)) {
+        const msg = body.detail.map((item) => item.msg).filter(Boolean).join('；')
+        if (msg) return Promise.reject(new Error(msg))
+      }
+      if (status === 500 && url.includes('/auth/')) {
+        return Promise.reject(
+          new Error('认证服务异常：请确认 Railway 已配置 JWT_SECRET 并完成重新部署'),
+        )
       }
       if (status === 404 && url.includes('/auth/')) {
         return Promise.reject(

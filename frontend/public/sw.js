@@ -1,5 +1,5 @@
-const CACHE_NAME = 'podcast-flow-static-v3'
-const PRECACHE_URLS = ['/', '/index.html', '/manifest.webmanifest']
+const CACHE_NAME = 'podcast-flow-static-v4'
+const PRECACHE_URLS = ['/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -17,8 +17,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-function shouldCachePath(pathname) {
-  if (pathname === '/' || pathname === '/index.html') return true
+function isStaticAsset(pathname) {
   return /\.(js|css|woff2?|png|svg|webp|ico|webmanifest|map)$/i.test(pathname)
 }
 
@@ -29,7 +28,27 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/')) return
-  if (!shouldCachePath(url.pathname)) return
+
+  const isNavigation =
+    request.mode === 'navigate' ||
+    (request.headers.get('accept') || '').includes('text/html')
+
+  if (isNavigation) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy))
+          }
+          return response
+        })
+        .catch(() => caches.match('/index.html').then((cached) => cached || fetch(request))),
+    )
+    return
+  }
+
+  if (!isStaticAsset(url.pathname)) return
 
   event.respondWith(
     caches.match(request).then((cached) => {

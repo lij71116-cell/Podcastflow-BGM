@@ -12,7 +12,7 @@ from src.core.config import get_settings
 from src.db.session import get_db
 from src.models.user import ChangePasswordRequest, LoginRequest, RegisterRequest
 from src.repositories.user_repository import UserRepository
-from src.services.auth_exceptions import AuthError
+from src.services.auth_exceptions import AuthConfigError, AuthError
 from src.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -49,7 +49,7 @@ async def register(
         await db.commit()
     except AuthError as exc:
         await db.rollback()
-        status = 400 if exc.code >= 40000 and exc.code < 40100 else 401
+        status = 500 if isinstance(exc, AuthConfigError) else 400 if exc.code >= 40000 and exc.code < 40100 else 401
         return _auth_error_response(exc, status)
 
     response = JSONResponse(status_code=200, content=success_response(data.model_dump()).model_dump())
@@ -68,7 +68,8 @@ async def login(
         await db.commit()
     except AuthError as exc:
         await db.rollback()
-        return _auth_error_response(exc, 401)
+        status = 500 if isinstance(exc, AuthConfigError) else 401
+        return _auth_error_response(exc, status)
 
     response = JSONResponse(status_code=200, content=success_response(data.model_dump()).model_dump())
     _set_auth_cookie(response, data.token)

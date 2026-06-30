@@ -30,6 +30,8 @@ async def _startup() -> None:
     await init_db()
     ensure_storage_dirs(settings.storage_root)
     await start_mix_worker()
+    if not settings.jwt_secret.strip():
+        logger.warning("JWT_SECRET is empty — auth register/login will fail until configured")
     logger.info(
         "Podcast Flow backend started",
         host=settings.host,

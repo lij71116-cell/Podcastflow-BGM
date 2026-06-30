@@ -6,6 +6,7 @@ import bcrypt
 import jwt
 
 from src.core.config import get_settings
+from src.services.auth_exceptions import AuthConfigError
 
 
 def hash_password(password: str) -> str:
@@ -23,6 +24,8 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 
 def create_access_token(user_id: str) -> str:
     settings = get_settings()
+    if not settings.jwt_secret.strip():
+        raise AuthConfigError
     expire = datetime.now(tz=UTC) + timedelta(hours=settings.jwt_expire_hours)
     payload = {"sub": user_id, "exp": expire}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

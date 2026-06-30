@@ -36,3 +36,8 @@ class UserNotFoundError(AuthError):
 class InvalidCurrentPasswordError(AuthError):
     def __init__(self) -> None:
         super().__init__(40102, "当前密码错误")
+
+
+class AuthConfigError(AuthError):
+    def __init__(self) -> None:
+        super().__init__(50001, "服务未配置 JWT_SECRET，请在 Railway Variables 中设置后重新部署")

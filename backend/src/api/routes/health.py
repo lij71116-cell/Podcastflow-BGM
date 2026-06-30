@@ -14,11 +14,13 @@ async def health_check(
     settings: Annotated[AppSettings, Depends(get_settings)],
 ) -> JSONResponse:
     ffmpeg_ok = is_ffmpeg_available(settings.ffmpeg_path, settings.ffprobe_path)
+    jwt_configured = bool(settings.jwt_secret.strip())
     response = success_response(
         {
             "status": "ok",
             "api_version": "2.0",
             "auth_enabled": True,
+            "jwt_configured": jwt_configured,
             "ffmpeg_available": ffmpeg_ok,
         }
     )
