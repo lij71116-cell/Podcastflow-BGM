@@ -15,6 +15,7 @@ import type {
   MixTaskDTO,
   PlaybackProgressDTO,
   PlayerContext,
+  PreviewMixResponseDTO,
 } from '@/types/api'
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -120,6 +121,26 @@ export async function createMixedAudio(payload: {
     return res.data
   } catch (error) {
     throw new Error(extractErrorMessage(error, '创建合成任务失败'), { cause: error })
+  }
+}
+
+export async function createMixPreview(payload: {
+  podcast_source_id: string
+  bgm_source_id: string
+  mix_config: MixConfigDTO
+  start_sec?: number
+  duration_sec?: number | null
+}): Promise<PreviewMixResponseDTO> {
+  try {
+    const res = (await http.post('/mixed-audios/preview', payload, {
+      timeout: 180000,
+    })) as ApiResponse<PreviewMixResponseDTO>
+    if (res.code !== 200) {
+      throw new Error(res.message)
+    }
+    return res.data
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, '试听生成失败'), { cause: error })
   }
 }
 

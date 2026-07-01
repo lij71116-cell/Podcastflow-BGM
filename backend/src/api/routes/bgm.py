@@ -145,7 +145,10 @@ async def stream_bgm(
         path,
         media_type=mime,
         filename=f"bgm.{path.suffix.lstrip('.')}",
-        headers={"Content-Disposition": "inline"},
+        headers={
+            "Content-Disposition": "inline",
+            "Accept-Ranges": "bytes",
+        },
     )
 
 

@@ -22,7 +22,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { uploadBgm, validateBgmUrl, validateQishuiShare } from '@/services/bgmService'
-import { createMixedAudio, getMixTask } from '@/services/mixedAudioService'
+import { createMixPreview, createMixedAudio, getMixTask } from '@/services/mixedAudioService'
 import { parsePodcast } from '@/services/podcastService'
 import { isXiaoyuzhouUrl } from '@/utils/format'
 import { extractAccentColorFromImage } from '@/utils/coverColor'
@@ -31,6 +31,7 @@ import type { BgmSourceDTO, MixedAudioAssetDTO, PodcastSourceDTO } from '@/types
 import '@/components/StepCard.css'
 import { MixPreviewPlayer } from '@/components/MixPreviewPlayer'
 import { playMixedAsset } from '@/utils/player'
+import { isTouchPreviewDevice } from '@/utils/previewDevice'
 import { CreateEventAxis } from './CreateEventAxis'
 import type { CreateFlowStep } from './createFlowSteps'
 import './CreatePage.css'
@@ -72,6 +73,10 @@ export default function CreatePage() {
   const [previewPlayToken, setPreviewPlayToken] = useState(0)
   const [previewMasterVolume, setPreviewMasterVolume] = useState(80)
   const [previewError, setPreviewError] = useState<string | null>(null)
+  const [previewGenerating, setPreviewGenerating] = useState(false)
+  const [serverPreview, setServerPreview] = useState<{ playUrl: string; duration: number } | null>(
+    null,
+  )
 
   const [generating, setGenerating] = useState(false)
   const [taskProgress, setTaskProgress] = useState(0)
@@ -226,9 +231,31 @@ export default function CreatePage() {
 
   useEffect(() => () => stopPolling(), [stopPolling])
 
-  const handlePreview = () => {
-    if (!podcast || !bgm) return
+  const handlePreview = async () => {
+    if (!podcast || !bgm || previewGenerating) return
     setPreviewError(null)
+
+    if (isTouchPreviewDevice()) {
+      setPreviewGenerating(true)
+      try {
+        const result = await createMixPreview({
+          podcast_source_id: podcast.id,
+          bgm_source_id: bgm.id,
+          mix_config: buildMixConfig(),
+          start_sec: 0,
+          duration_sec: 60,
+        })
+        setServerPreview({ playUrl: result.play_url, duration: result.duration })
+        setPreviewPlayToken((token) => token + 1)
+      } catch (error) {
+        setPreviewError(error instanceof Error ? error.message : '试听生成失败')
+      } finally {
+        setPreviewGenerating(false)
+      }
+      return
+    }
+
+    setServerPreview(null)
     setPreviewPlayToken((token) => token + 1)
   }
 
@@ -520,12 +547,17 @@ export default function CreatePage() {
               <h3>生成试听片段</h3>
               <Button
                 type="primary"
-                disabled={!canPreview || previewPlayToken > 0}
-                onClick={handlePreview}
+                disabled={!canPreview || previewPlayToken > 0 || previewGenerating}
+                loading={previewGenerating}
+                onClick={() => void handlePreview()}
                 block
                 className={previewPlayToken > 0 ? 'create-preview-start-btn is-active' : 'create-preview-start-btn'}
               >
-                {previewPlayToken > 0 ? '试听中…' : '开始试听'}
+                {previewGenerating
+                  ? '正在生成试听…'
+                  : previewPlayToken > 0
+                    ? '试听中…'
+                    : '开始试听'}
               </Button>
             </div>
             {previewError && (
@@ -533,7 +565,7 @@ export default function CreatePage() {
             )}
             {previewPlayToken > 0 && podcast && bgm && (
               <MixPreviewPlayer
-                key={`${podcast.id}-${bgm.id}-${previewPlayToken}`}
+                key={`${podcast.id}-${bgm.id}-${previewPlayToken}-${serverPreview?.playUrl ?? 'dual'}`}
                 podcastId={podcast.id}
                 bgmId={bgm.id}
                 podcastDurationSec={podcast.duration}
@@ -545,6 +577,7 @@ export default function CreatePage() {
                 masterVolume={previewMasterVolume}
                 onMasterVolumeChange={setPreviewMasterVolume}
                 playToken={previewPlayToken}
+                serverPreview={serverPreview}
                 onError={setPreviewError}
               />
             )}

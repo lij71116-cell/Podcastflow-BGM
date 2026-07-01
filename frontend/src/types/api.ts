@@ -145,3 +145,10 @@ export interface BatchDeleteMixedAudiosResponse {
   deleted_count: number
   deleted_ids: string[]
 }
+
+export interface PreviewMixResponseDTO {
+  preview_id: string
+  play_url: string
+  duration: number
+  start_sec: number
+}

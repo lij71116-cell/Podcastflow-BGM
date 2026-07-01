@@ -101,7 +101,10 @@ async def stream_mix_preview(
         path,
         media_type="audio/mpeg",
         filename="preview.mp3",
-        headers={"Content-Disposition": "inline; filename=preview.mp3"},
+        headers={
+            "Content-Disposition": "inline; filename=preview.mp3",
+            "Accept-Ranges": "bytes",
+        },
     )
 
 
