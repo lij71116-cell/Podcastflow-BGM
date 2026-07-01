@@ -16,6 +16,14 @@
 
 （项目经验将在开发过程中追加）
 
+## 2026-07-01｜Railway 部署后账号资产丢失
+
+- **现象**：版本发布后旧账号无法登录、需重新注册、历史组合音频消失
+- **根因**：Railway 容器重启后 ephemeral 文件系统清空；若 Volume 未挂载 `/data`，或 `DATABASE_PATH`/`STORAGE_ROOT` 指向 `/app/backend/...`，每次 deploy 都会新建空库
+- **与前端播放器修复无关**：该问题来自后端持久化配置，非 InlinePlayer 变更
+- **修复**：`docker-entrypoint` 生产模式强制校验 `/data` Volume；`/health` 暴露 `persistence` 诊断（`volume_mounted` / `user_count`）
+- **已丢数据**：未挂载 Volume 时旧容器内数据通常不可恢复；挂载 Volume 后仅保证**后续发布**不再丢失
+
 ## 2026-07-01｜详情页播放器与底部栏同步
 
 - **播放失败根因**：InlinePlayer 与 GlobalPlayerBar 各自维护 `<audio>`，双实例争用 Media Session / stream，详情页点击播放易报错

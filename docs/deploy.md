@@ -35,10 +35,34 @@
 | **Builder** | Dockerfile（`railway.json`） |
 | **Dockerfile Path** | `backend/Dockerfile` |
 
-### 3. 持久化 Volume（必做）
+### 3. 持久化 Volume（必做 · 否则每次部署丢账号与音频）
+
+> **重要**：Railway 容器文件系统会在重新部署时被清空。未挂载 Volume 时，SQLite 与音频文件写入容器临时目录，表现为「旧账号无法登录、资产消失、只能重新注册」。
 
 1. Service → **Settings** → **Volumes** → **Add Volume**
-2. **Mount Path**：`/data`
+2. **Mount Path**：`/data`（必须与下方环境变量前缀一致）
+3. 确认 Volume 已绑定到**当前** Service（重建 Service 后需重新挂载）
+
+部署后验证（`persistence_ok` 必须为 `true`）：
+
+```bash
+curl -s https://podcast-bgm-production.up.railway.app/health | jq '.data.persistence'
+```
+
+期望输出示例：
+
+```json
+{
+  "database_path": "/data/podcast_flow.db",
+  "storage_root": "/data/storage",
+  "volume_mounted": true,
+  "persistence_ok": true,
+  "user_count": 1,
+  "mixed_audio_count": 3
+}
+```
+
+若 `volume_mounted: false` 或 `persistence_ok: false`，**不要继续验收**，先修复 Volume 再部署。
 
 ### 4. 环境变量（V2 · JWT）
 
@@ -162,7 +186,8 @@ PWA（manifest / SW）随 `npm run build` 自动产出；无需额外 Vercel 配
 | API 502 | Railway 服务是否 Running；`vercel.json` 域名是否正确 |
 | 401 未登录 | 先注册登录；检查 `JWT_SECRET` 是否已设置 |
 | 合成失败 / OOM | Railway 内存调至 512MB–1GB |
-| 数据丢失 | Volume 挂载 `/data`，路径与环境变量一致 |
+| 数据丢失 / 部署后账号资产清空 | **Volume 未挂载 `/data`** 或 `DATABASE_PATH`/`STORAGE_ROOT` 不在 `/data` 下；查 `/health` → `persistence` 字段 |
+| 旧账号无法登录但能重新注册 | 多为数据库被重置（同上）；若仅 Cookie 失效应能原账号密码登录，不应需要新注册 |
 | Cookie 未写入 | `DEBUG=false`；Vercel 必须 HTTPS |
 | **登录/注册 404** | Railway 仍为 **V1 旧镜像**（无 `/api/auth/*`）。在 Railway 重新部署 `Podcastflow-BGM` 最新 `main`，并设置 `JWT_SECRET`；部署后 `curl …/health` 应含 `"api_version":"2.0"` |
 | PWA 不生效 | 确认 Vercel 已部署最新 build；清除旧 SW |

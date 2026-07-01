@@ -120,6 +120,8 @@ def load_settings(env_path: Path | None = None) -> AppSettings:
         settings_dict["database_path"] = _resolve_project_path(
             project_root, str(settings_dict["database_path"])
         )
+    elif settings_dict.get("debug") is False:
+        settings_dict["database_path"] = "/data/podcast_flow.db"
     else:
         settings_dict["database_path"] = _resolve_project_path(
             project_root, "backend/data/podcast_flow.db"
@@ -129,6 +131,8 @@ def load_settings(env_path: Path | None = None) -> AppSettings:
         settings_dict["storage_root"] = _resolve_project_path(
             project_root, str(settings_dict["storage_root"])
         )
+    elif settings_dict.get("debug") is False:
+        settings_dict["storage_root"] = "/data/storage"
     else:
         settings_dict["storage_root"] = _resolve_project_path(
             project_root, "backend/storage"
